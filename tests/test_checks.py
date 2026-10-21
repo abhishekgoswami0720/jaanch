@@ -1,0 +1,153 @@
+import asyncio
+
+import pytest
+from conftest import NOW, make_fetch, sample
+
+from jaanch.domain_intel import check_domains, lookalike_of
+from jaanch.extract import extract_rules, registrable_domain
+from jaanch.models import Signal
+from jaanch.patterns import check_patterns
+from jaanch.pipeline import run_local
+from jaanch.scoring import score
+
+
+def run(text, fetch=None):
+    return asyncio.run(run_local(text, fetch=fetch or make_fetch(), now=NOW))
+
+
+# ---- end to end on the samples ------------------------------------------------
+
+@pytest.mark.parametrize("name", ["scam_fee_whatsapp.txt", "scam_task_hinglish.txt", "scam_lookalike_email.txt"])
+def test_scams_are_high_risk(name):
+    r = run(sample(name))
+    assert r.verdict == "high_risk", (r.risk, [s.id for s in r.signals])
+
+
+@pytest.mark.parametrize("name", ["genuine_internshala.txt", "genuine_campus_offer.txt"])
+def test_genuine_offers_are_low_risk(name):
+    r = run(sample(name))
+    assert r.verdict == "low_risk", (r.risk, [(s.id, s.weight) for s in r.signals])
+
+
+def test_lookalike_email_evidence():
+    r = run(sample("scam_lookalike_email.txt"))
+    ids = {s.id for s in r.signals}
+    assert {"lookalike", "domain_new", "no_mx", "fee_demand", "short_link", "id_documents"} <= ids
+    assert "infosys-careers.in" in r.checked
+
+
+def test_freemail_brand_and_telegram():
+    r = run(sample("scam_fee_whatsapp.txt"))
+    ids = {s.id for s in r.signals}
+    assert {"freemail_brand", "off_platform", "fee_demand", "no_interview", "urgency"} <= ids
+    assert "t.me" not in r.checked  # messaging links are not domain-checked
+
+
+def test_hinglish_task_scam():
+    ids = {s.id for s in run(sample("scam_task_hinglish.txt")).signals}
+    assert {"task_scam", "easy_money", "off_platform", "no_interview"} <= ids
+
+
+# ---- resilience ----------------------------------------------------------------
+
+def test_network_down_still_answers():
+    r = asyncio.run(run_local(sample("scam_lookalike_email.txt"), fetch=make_fetch(fail=True), now=NOW))
+    assert r.verdict == "high_risk"  # text + lookalike evidence alone are enough
+    assert r.errors
+
+
+def test_rdap_missing_is_not_treated_as_fake():
+    """Registries without RDAP must not make a real domain look fake."""
+    world = {"swiggy.in": (None, True, True)}
+
+    async def fetch(url):
+        if "rdap.org" in url:
+            return 404, None
+        return await make_fetch(world)(url)
+
+    facts = extract_rules("Apply at https://careers.swiggy.in")
+    report = asyncio.run(check_domains(facts, fetch=fetch, now=NOW))
+    assert not any(s.id == "not_registered" for s in report.signals)
+
+
+def test_nonexistent_domain():
+    facts = extract_rules("Contact hr@ghost-company-hiring.com")
+    report = asyncio.run(check_domains(facts, fetch=make_fetch(), now=NOW))
+    assert any(s.id == "not_registered" for s in report.signals)
+
+
+# ---- units ---------------------------------------------------------------------
+
+@pytest.mark.parametrize("domain,brand", [
+    ("infosys-careers.in", "infosys"), ("tcshiring.com", "tcs"), ("wipr0.com", "wipro"),
+    ("amazom.in", "amazon"), ("infosys.co", "infosys"), ("flipkart-jobs.online", "flipkart"),
+])
+def test_lookalikes(domain, brand):
+    assert lookalike_of(domain)[0] == brand
+
+
+@pytest.mark.parametrize("domain", [
+    "infosys.com", "tcsion.com", "zoho.com", "internshala.com", "gla.ac.in", "electronicshub.org",
+    "april-events.com", "metallica.com",
+])
+def test_not_lookalikes(domain):
+    assert lookalike_of(domain) is None
+
+
+def test_official_email_lowers_risk():
+    facts = extract_rules("Infosys offer: please accept on the portal. Contact recruitment@infosys.com")
+    report = asyncio.run(check_domains(facts, fetch=make_fetch(), now=NOW))
+    assert any(s.id == "official_email" and s.weight < 0 for s in report.signals)
+
+
+def test_registrable_domain():
+    assert registrable_domain("careers.infosys.com") == "infosys.com"
+    assert registrable_domain("mail.gla.ac.in") == "gla.ac.in"
+    assert registrable_domain("www.tcs.com") == "tcs.com"
+
+
+def test_extract_contacts():
+    f = extract_rules("Mail hr.team@gmail.com or visit https://bit.ly/abc, call +91 98765 43210. Fee ₹999 payable.")
+    assert f.emails == ["hr.team@gmail.com"]
+    assert "bit.ly" in f.domains and "gmail.com" not in f.domains
+    assert f.phones == ["+919876543210"]
+    assert f.fee
+
+
+def test_genuine_stipend_is_not_easy_money():
+    f = extract_rules("Stipend ₹15,000 per month for 6 months. Interview on Friday.")
+    assert not any(s.id == "easy_money" for s in check_patterns(f).signals)
+
+
+def test_score_is_deterministic_and_bounded():
+    sigs = [Signal(id=f"s{i}", label="x", weight=3.0) for i in range(10)]
+    assert score(sigs) == 10
+    assert score([Signal(id="a", label="x", weight=-5)]) == 1
+    assert score([]) == 2
+    # The same kind of signal is counted once
+    assert score([Signal(id="a", label="x", weight=2)] * 3) == 4
+
+
+@pytest.mark.parametrize("text", [
+    "There is no registration fee at any stage.",
+    "We never ask for your OTP or bank details.",
+    "Selection is not without interview: two rounds on Friday.",
+])
+def test_negated_phrases_are_not_red_flags(text):
+    ids = {s.id for s in check_patterns(extract_rules(text)).signals}
+    assert not ids & {"fee_demand", "secret_data", "id_documents"}, ids
+
+
+def test_negation_does_not_leak_across_sentences():
+    ids = {s.id for s in check_patterns(extract_rules("No interview needed! Pay registration fee ₹999 now")).signals}
+    assert {"fee_demand", "no_interview"} <= ids
+
+
+def test_email_local_part_is_not_a_domain():
+    f = extract_rules("Send screenshot to tcs.hr.recruit2026@gmail.com and hr.team@gmail.com")
+    assert f.domains == [] and f.urls == []
+
+
+def test_brand_display_names():
+    sigs = check_patterns(extract_rules("TCS hiring! mail tcs.jobs@gmail.com")).signals
+    assert any("TCS" in s.label for s in sigs)
