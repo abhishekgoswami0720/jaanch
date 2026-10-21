@@ -30,6 +30,10 @@ async def on_pattern_request(ctx: Context, sender: str, facts: OfferFacts):
     await ctx.send(sender, report)
 
 
+DOMAIN_DEV_SEED = "jaanch dev seed domain intel do not use in prod"
+PATTERN_DEV_SEED = "jaanch dev seed pattern check do not use in prod"
+
+
 def _seed(var: str, dev_default: str) -> str:
     seed = os.getenv(var)
     if not seed:
@@ -38,10 +42,11 @@ def _seed(var: str, dev_default: str) -> str:
     return seed
 
 
-def build_domain_agent(mailbox: bool) -> Agent:
+def build_domain_agent(mailbox: bool, port: int | None = None) -> Agent:
     agent = Agent(
         name="jaanch-domain-intel",
-        seed=_seed("JAANCH_DOMAIN_SEED", "jaanch dev seed domain intel do not use in prod"),
+        seed=_seed("JAANCH_DOMAIN_SEED", DOMAIN_DEV_SEED),
+        port=port,
         mailbox=mailbox,
         publish_agent_details=mailbox,
         readme_path=str(HERE / "README_domain.md"),
@@ -51,10 +56,11 @@ def build_domain_agent(mailbox: bool) -> Agent:
     return agent
 
 
-def build_pattern_agent(mailbox: bool) -> Agent:
+def build_pattern_agent(mailbox: bool, port: int | None = None) -> Agent:
     agent = Agent(
         name="jaanch-pattern-check",
-        seed=_seed("JAANCH_PATTERN_SEED", "jaanch dev seed pattern check do not use in prod"),
+        seed=_seed("JAANCH_PATTERN_SEED", PATTERN_DEV_SEED),
+        port=port,
         mailbox=mailbox,
         publish_agent_details=mailbox,
         readme_path=str(HERE / "README_pattern.md"),

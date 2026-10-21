@@ -137,7 +137,8 @@ async def on_verify(ctx: Context, sender: str, req: VerifyOfferRequest):
     ))
 
 
-def build_orchestrator(mailbox: bool, domain_address: str, pattern_address: str) -> Agent:
+def build_orchestrator(mailbox: bool, domain_address: str, pattern_address: str,
+                       port: int | None = None) -> Agent:
     SPECIALISTS["domain"] = domain_address
     SPECIALISTS["pattern"] = pattern_address
     seed = os.getenv("JAANCH_SEED")
@@ -147,6 +148,7 @@ def build_orchestrator(mailbox: bool, domain_address: str, pattern_address: str)
     agent = Agent(
         name="jaanch",
         seed=seed,
+        port=port,
         mailbox=mailbox,
         publish_agent_details=mailbox,
         readme_path=str(HERE / "README_jaanch.md"),

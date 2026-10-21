@@ -74,6 +74,7 @@ cp .env.example .env        # add ASI1_API_KEY and three seed phrases
 python scripts/check.py samples/scam_fee_whatsapp.txt     # one check, no agents
 JAANCH_MAILBOX=0 python scripts/local_demo.py             # all agents + test clients, locally
 python run.py                                             # all agents, connected to Agentverse
+python run.py jaanch    # or: domain / pattern; one agent per terminal
 pytest -q                                                 # 40 tests, no network needed
 ```
 
@@ -81,7 +82,7 @@ On Windows, set variables with `set JAANCH_MAILBOX=0` before the command.
 
 ### Put it on Agentverse and ASI:One
 1. Get an ASI1 API key at asi1.ai/dashboard/api-keys and put it in `.env` with three long random seed phrases.
-2. `python run.py`. It prints the three agent addresses; copy them into the table above.
+2. `python run.py`. It prints the three agent addresses; copy them into the table above. (If ASI:One can't reach the agents when they share one process, run `python run.py jaanch`, `python run.py domain` and `python run.py pattern` in three terminals instead.)
 3. Open the Agent Inspector link printed for `jaanch`, click **Connect → Mailbox**. Repeat for the two specialists.
 4. In Agentverse, open the `jaanch` profile and check that the README and badges show. Click **Chat with Agent** to open ASI:One, then paste a sample from `samples/`.
 5. Share the ASI:One chat to get the public chat URL for the submission.
