@@ -17,6 +17,7 @@ WORLD = {
     "infosys.com": ("1992-03-30T05:00:00Z", True, True),
     "fresh-hiring.com": ("2026-10-15T00:00:00Z", True, True),
     "young-startup.in": ("2026-07-01T00:00:00Z", True, True),
+    "brightpath-edutech.in": ("2026-06-02T00:00:00Z", True, True),
 }
 
 

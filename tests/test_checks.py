@@ -23,6 +23,11 @@ def test_scams_are_high_risk(name):
     assert r.verdict == "high_risk", (r.risk, [s.id for s in r.signals])
 
 
+def test_middle_of_the_scale():
+    r = run(sample("suspicious_new_startup.txt"))
+    assert r.verdict == "suspicious", (r.risk, [(s.id, s.weight) for s in r.signals])
+
+
 @pytest.mark.parametrize("name", ["genuine_internshala.txt", "genuine_campus_offer.txt"])
 def test_genuine_offers_are_low_risk(name):
     r = run(sample(name))

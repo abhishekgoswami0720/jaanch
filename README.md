@@ -74,7 +74,7 @@ cp .env.example .env        # add ASI1_API_KEY and three seed phrases
 python scripts/check.py samples/scam_fee_whatsapp.txt     # one check, no agents
 JAANCH_MAILBOX=0 python scripts/local_demo.py             # all agents + test clients, locally
 python run.py                                             # all agents, connected to Agentverse
-pytest -q                                                 # 39 tests, no network needed
+pytest -q                                                 # 40 tests, no network needed
 ```
 
 On Windows, set variables with `set JAANCH_MAILBOX=0` before the command.
@@ -87,7 +87,7 @@ On Windows, set variables with `set JAANCH_MAILBOX=0` before the command.
 5. Share the ASI:One chat to get the public chat URL for the submission.
 
 ## What's built vs. next
-**Built:** three agents with the Chat Protocol and a public verification protocol, ASI1 extraction and explanation with fallbacks, live RDAP/MX/lookalike checks, Hinglish red flags, an ASI:One interactive card with "How do I report this?" (1930 / cybercrime.gov.in / Chakshu), a local demo, and 39 tests.
+**Built:** three agents with the Chat Protocol and a public verification protocol, ASI1 extraction and explanation with fallbacks, live RDAP/MX/lookalike checks, Hinglish red flags, an ASI:One interactive card with "How do I report this?" (1930 / cybercrime.gov.in / Chakshu), a local demo, and 40 tests.
 
 **Next:**
 - Payment Protocol for a paid deep report.
