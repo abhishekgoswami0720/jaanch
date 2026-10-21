@@ -222,5 +222,5 @@ run.py         starts the agents
 
 <p align="center">
 Built for <b>Fetch-A-Thon 3.0</b> (Masters' Union, 24 Oct 2026) by <b>Team Chiranjivi</b><br>
-Abhishek Goswami · Akshat Gupta · GLA University, Mathura
+Abhishek Goswami · Akshat Gupta · Anirudh Kumar · Parv Mishra · Anmol Gola · GLA University, Mathura
 </p>
