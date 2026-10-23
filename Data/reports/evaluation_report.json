@@ -1,0 +1,64 @@
+{
+  "evaluation_timestamp_utc": "2026-10-23T10:25:38.036999+00:00",
+  "model_file": "job_scam_model.joblib",
+  "test_dataset": "data\\processed\\test.csv",
+  "total_test_samples": 2633,
+  "class_distribution": {
+    "legitimate": 2504,
+    "scam": 129
+  },
+  "train_test_overlap_count": 0,
+  "pr_auc": 0.8653,
+  "roc_auc": 0.9827,
+  "majority_class_baseline": {
+    "accuracy": 0.951,
+    "scam_precision": 0.0,
+    "scam_recall": 0.0,
+    "scam_f1": 0.0
+  },
+  "default_threshold_metrics": {
+    "threshold": 0.5,
+    "confusion_matrix": {
+      "TN": 2460,
+      "FP": 44,
+      "FN": 22,
+      "TP": 107
+    },
+    "scam": {
+      "precision": 0.7086,
+      "recall": 0.8295,
+      "f1": 0.7643
+    },
+    "legitimate": {
+      "precision": 0.9911,
+      "recall": 0.9824,
+      "f1": 0.9868
+    },
+    "macro_f1": 0.8755
+  },
+  "validation_selected_threshold_metrics": {
+    "threshold": 0.6463,
+    "confusion_matrix": {
+      "TN": 2482,
+      "FP": 22,
+      "FN": 31,
+      "TP": 98
+    },
+    "scam": {
+      "precision": 0.8167,
+      "recall": 0.7597,
+      "f1": 0.7871
+    },
+    "legitimate": {
+      "precision": 0.9877,
+      "recall": 0.9912,
+      "f1": 0.9894
+    },
+    "macro_f1": 0.8883
+  },
+  "limitations": [
+    "Evaluated strictly on held-out split of EMSCAD historical job board postings.",
+    "Test set does not measure performance on WhatsApp/Telegram Indian student internship scams.",
+    "Evaluation reflects text-only postings without external domain lookups."
+  ]
+}

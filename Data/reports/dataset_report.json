@@ -1,0 +1,127 @@
+{
+  "dataset_name": "EMSCAD_fake_job_postings",
+  "processed_at_utc": "2026-10-23T10:23:42.352890+00:00",
+  "random_seed": 42,
+  "raw_file": "fake_job_postings.csv",
+  "initial_rows": 17880,
+  "initial_columns": 18,
+  "initial_target_distribution": {
+    "0": 17014,
+    "1": 866
+  },
+  "exact_duplicates_removed": 333,
+  "cleaned_unique_rows": 17547,
+  "cleaned_target_distribution": {
+    "0": 16692,
+    "1": 855
+  },
+  "splits": {
+    "train": {
+      "total": 12282,
+      "scam": 598,
+      "legitimate": 11684
+    },
+    "val": {
+      "total": 2632,
+      "scam": 128,
+      "legitimate": 2504
+    },
+    "test": {
+      "total": 2633,
+      "scam": 129,
+      "legitimate": 2504
+    }
+  },
+  "column_missingness": {
+    "job_id": {
+      "null_count": 0,
+      "null_pct": 0.0,
+      "dtype": "int64"
+    },
+    "title": {
+      "null_count": 0,
+      "null_pct": 0.0,
+      "dtype": "str"
+    },
+    "location": {
+      "null_count": 346,
+      "null_pct": 1.94,
+      "dtype": "str"
+    },
+    "department": {
+      "null_count": 11547,
+      "null_pct": 64.58,
+      "dtype": "str"
+    },
+    "salary_range": {
+      "null_count": 15012,
+      "null_pct": 83.96,
+      "dtype": "str"
+    },
+    "company_profile": {
+      "null_count": 3308,
+      "null_pct": 18.5,
+      "dtype": "str"
+    },
+    "description": {
+      "null_count": 1,
+      "null_pct": 0.01,
+      "dtype": "str"
+    },
+    "requirements": {
+      "null_count": 2696,
+      "null_pct": 15.08,
+      "dtype": "str"
+    },
+    "benefits": {
+      "null_count": 7212,
+      "null_pct": 40.34,
+      "dtype": "str"
+    },
+    "telecommuting": {
+      "null_count": 0,
+      "null_pct": 0.0,
+      "dtype": "int64"
+    },
+    "has_company_logo": {
+      "null_count": 0,
+      "null_pct": 0.0,
+      "dtype": "int64"
+    },
+    "has_questions": {
+      "null_count": 0,
+      "null_pct": 0.0,
+      "dtype": "int64"
+    },
+    "employment_type": {
+      "null_count": 3471,
+      "null_pct": 19.41,
+      "dtype": "str"
+    },
+    "required_experience": {
+      "null_count": 7050,
+      "null_pct": 39.43,
+      "dtype": "str"
+    },
+    "required_education": {
+      "null_count": 8105,
+      "null_pct": 45.33,
+      "dtype": "str"
+    },
+    "industry": {
+      "null_count": 4903,
+      "null_pct": 27.42,
+      "dtype": "str"
+    },
+    "function": {
+      "null_count": 6455,
+      "null_pct": 36.1,
+      "dtype": "str"
+    },
+    "fraudulent": {
+      "null_count": 0,
+      "null_pct": 0.0,
+      "dtype": "int64"
+    }
+  }
+}

@@ -5,3 +5,24 @@ __pycache__/
 .venv/
 venv/
 *.log
+
+# Data & Models (ignore large/raw data and binary model artifacts)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/labels/*
+!data/labels/.gitkeep
+!data/labels/*.json
+data/reports/*
+!data/reports/.gitkeep
+!data/reports/*.json
+!data/README.md
+
+models/*
+!models/.gitkeep
+!models/*metadata*.json
+!models/README.md
+
+# Ignore raw CSV files in legacy Data folder
+/Data/*.csv

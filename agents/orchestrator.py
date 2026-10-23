@@ -25,6 +25,7 @@ from uagents_core.contrib.protocols.chat import (
 from jaanch import llm
 from jaanch.cards import REPORT_STEPS, WELCOME, card_message, verdict_card
 from jaanch.domain_intel import check_domains
+from jaanch.ml_detector import predict_offer
 from jaanch.models import (
     DomainReport,
     OfferFacts,
@@ -71,7 +72,9 @@ async def investigate(ctx: Context, text: str) -> tuple[Result, bool]:
         domain.errors.append("domain agent unavailable; checked locally")
     if pattern is None:
         pattern = check_patterns(facts)
-    return combine(facts, domain, pattern), is_offer
+    pred = predict_offer(facts.text)
+    ml_sig = pred.to_signal()
+    return combine(facts, domain, pattern, ml_signal=ml_sig), is_offer
 
 
 def _looks_like_chitchat(text: str) -> bool:

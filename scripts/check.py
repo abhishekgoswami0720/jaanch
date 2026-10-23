@@ -32,6 +32,8 @@ async def main(arg: str):
 
 
 if __name__ == "__main__":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     load_dotenv()
     if len(sys.argv) < 2:
         sys.exit(__doc__)

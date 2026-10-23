@@ -34,12 +34,14 @@ flowchart LR
     A["📩 You paste the offer<br/>into ASI:One"] --> B["🧠 Jaanch reads it<br/>company, pay, fee,<br/>emails, links"]
     B --> C["🌐 Website checker<br/>How old is the website?<br/>Does it copy a big brand?<br/>Can it even receive email?"]
     B --> D["🚩 Red-flag checker<br/>Asks for money or OTP?<br/>Moves you to Telegram?<br/>Rushes you?"]
+    B --> ML["🤖 ML Scam Classifier<br/>Trained on 17k+ real job postings<br/>Matches fraudulent patterns"]
     C --> E["🔢 Adds up the points<br/>score from 1 to 10"]
     D --> E
+    ML --> E
     E --> F["💬 Plain answer<br/>score + reasons +<br/>what to do next"]
 ```
 
-Two helper agents do the checking at the same time, so the answer comes back fast. Job-search and career agents can also ask Jaanch to check a listing *before* they show it to you.
+Two helper agents do the checking at the same time, accompanied by an embedded ML text classifier trained on real-world job scam data. Job-search and career agents can also ask Jaanch to check a listing *before* they show it to you.
 
 ---
 
@@ -62,6 +64,7 @@ Every offer starts at **2**. Each warning sign adds points and each good sign ta
 | ✈️ Moves you to **Telegram or a personal WhatsApp** | **+2** |
 | 🤑 Promises **a lot of money for very little work** | **+2** |
 | ❓ The website **doesn't exist** at all | **+2** |
+| 🤖 **Text matches fraudulent posting dataset** (ML classifier) | **+1.5 to +2** |
 | 🕐 Website less than 6 months old · its email can't receive mail · **no interview** | **+1.5** each |
 | 🪪 Wants **Aadhaar, PAN or bank details** before any interview · **rushes you** · uses **short links** · recruiter on a free email | **+1** each |
 | 👋 Starts with a generic **"Dear candidate"** | **+0.5** |
@@ -96,9 +99,10 @@ Every point comes from something you can see in the message or check about the w
 
 ## Why you can trust the score
 
-- **The AI never decides the score.** The AI only reads the messy message and explains the result in simple words. The score itself is plain maths over the evidence, so the same message always gets the same score.
+- **The AI never decides the score.** The LLM only reads the messy message and explains the result in simple words. The score itself is a fixed mathematical formula over verifiable signals (domain intelligence, rule checks, and ML text classification).
+- **The ML model provides evidence, not a black-box verdict.** The classifier acts as an additional evidence source (+1.5 to +2.0 risk weight). It never overrides strong rule or domain evidence.
 - **It understands "no".** *"There is **no** registration fee"* is not counted as asking for a fee.
-- **It keeps working when something breaks.** If a helper agent doesn't answer in 20 seconds, the main agent does that check itself. If the AI is down, simple rules take over. If a website lookup fails, Jaanch says so instead of guessing.
+- **It keeps working when something breaks.** If a helper agent doesn't answer in 20 seconds, the main agent does that check itself. If the ML model artifact is missing or disabled, Jaanch continues with rule and domain evidence. If a website lookup fails, Jaanch notes it instead of guessing.
 - **It speaks Hinglish.** Many scams are written in Hinglish, and Jaanch catches those red flags too.
 
 ---
@@ -134,6 +138,7 @@ sequenceDiagram
     participant J as jaanch
     participant D as jaanch-domain-intel
     participant P as jaanch-pattern-check
+    participant M as jaanch-ml-detector
     U->>J: ChatMessage (the offer)
     J->>J: ASI1 + rules extract company, pay, fee, emails, links
     par checks run in parallel
@@ -142,8 +147,11 @@ sequenceDiagram
     and
         J->>P: OfferFacts
         P-->>J: red flags in the text
+    and
+        J->>M: predict_offer(text)
+        M-->>J: ML text pattern signal
     end
-    Note over J: no reply in 20 s → runs that check itself
+    Note over J: no specialist reply in 20 s → runs that check itself
     J->>J: fixed formula → score 1–10
     J-->>U: verdict, reasons, interactive card
 ```
@@ -152,6 +160,65 @@ Other agents can call the same check:
 
 - Request: `VerifyOfferRequest { offer_text: str, source_url: str | null }`
 - Response: `VerifyOfferResponse { risk_score: int, verdict: "low_risk" | "suspicious" | "high_risk", reasons: [str], checked_domains: [str] }`
+
+</details>
+
+<details>
+<summary><b>ML Classifier: Dataset, Training & Evaluation</b></summary>
+
+<br>
+
+Jaanch integrates a machine learning classifier trained on the **Employment Scam Aegean Dataset (EMSCAD)** (17,880 verified job postings):
+
+### 1. Dataset Download & Placement
+1. Download `fake_job_postings.csv` from [Kaggle EMSCAD Dataset](https://www.kaggle.com/datasets/shivamb/real-or-fake-fake-jobposting-prediction).
+2. Place the file at:
+   ```
+   data/raw/fake_job_postings.csv
+   ```
+
+### 2. Data Preparation & Deduplication
+Run data inspection, deduplication, composite text construction, and stratified splitting (70% train, 15% val, 15% test):
+```bash
+python scripts/prepare_dataset.py
+```
+This writes processed CSVs to `data/processed/`, label mapping to `data/labels/target_mapping.json`, and an inspection report to `data/reports/dataset_report.json`.
+
+### 3. Model Training
+Train the scikit-learn TF-IDF + class-weighted Logistic Regression pipeline and compare with a Linear SVM baseline:
+```bash
+python scripts/train_model.py
+```
+Saves the fitted pipeline to `models/job_scam_model.joblib` and full metadata to `models/job_scam_model_metadata.json`.
+
+### 4. Held-Out Evaluation
+Evaluate the model on the held-out test set (isolated from training and threshold selection):
+```bash
+python scripts/evaluate_model.py
+```
+Outputs confusion matrix, scam precision/recall/F1, PR-AUC, and baseline comparisons to `data/reports/evaluation_report.json`.
+
+**Measured Test Metrics (Held-out Test Set, n=2,633):**
+* PR-AUC: 0.8653 | ROC-AUC: 0.9827
+* Majority Class Baseline F1: 0.0000
+* Logistic Regression @ validation-selected threshold (0.65):
+  * Scam Precision: 81.67%
+  * Scam Recall: 75.97%
+  * Scam F1-Score: 78.71%
+  * Legitimate Precision: 98.77% | Legitimate Recall: 99.12%
+
+### 5. Enabling / Disabling ML Inference
+ML inference is enabled by default if the model artifact exists. You can toggle it via environment variable:
+* Enable: `JAANCH_ENABLE_ML=1`
+* Disable: `JAANCH_ENABLE_ML=0`
+* Custom model path: `JAANCH_ML_MODEL_PATH=path/to/custom_model.joblib`
+
+### 6. Known Limitations
+* **Historical job board data:** EMSCAD is derived from global/English online job postings, while modern Indian student scams predominantly occur over WhatsApp/Telegram with Hinglish text and UPI demands.
+* **Complementary evidence:** The model evaluates textual resemblance to scam postings; it does not replace live domain lookups or payment demand detection.
+
+### 7. Privacy & Git Hygiene
+Raw datasets, processed splits, and binary `.joblib` models are gitignored. Never commit `.env`, credentials, phone numbers, or private candidate messages.
 
 </details>
 
@@ -170,7 +237,7 @@ python scripts/check.py samples/scam_fee_whatsapp.txt     # one check, no agents
 JAANCH_MAILBOX=0 python scripts/local_demo.py             # all agents + test clients, locally
 python run.py                                             # all agents, connected to Agentverse
 python run.py jaanch    # or: domain / pattern; one agent per terminal
-pytest -q                                                 # 40 tests, no network needed
+pytest -v                                                 # 66 tests, no network needed
 ```
 
 On Windows, set variables with `set JAANCH_MAILBOX=0` before the command.
@@ -197,10 +264,12 @@ On Windows, set variables with `set JAANCH_MAILBOX=0` before the command.
 
 ```
 agents/        the three uAgents (orchestrator + two specialists) and their Agentverse READMEs
-jaanch/        the checking logic: extraction, domain intel, patterns, scoring, ASI1 calls
-samples/       six test messages
-scripts/       one-off check from the terminal, and a local demo
-tests/         40 tests with a fake internet, so they run offline
+data/          dataset directory (raw, processed, labels, reports)
+jaanch/        the checking logic: extraction, domain intel, patterns, ML detector, scoring, ASI1 calls
+models/        trained ML model pipeline artifact and metadata JSON
+samples/       test messages (synthetic and real examples)
+scripts/       data prep, model training, evaluation, one-off check, and local demo
+tests/         66 unit and integration tests with offline fixtures
 run.py         starts the agents
 ```
 
@@ -210,7 +279,7 @@ run.py         starts the agents
 
 ## What's built and what's next
 
-**Built:** three agents with the Chat Protocol and a public verification protocol, ASI1 extraction and explanation with fallbacks, live website checks, Hinglish red flags, an ASI:One card with "How do I report this?", a local demo, and 40 tests.
+**Built:** three agents with the Chat Protocol and a public verification protocol, an ML recruitment scam classifier trained on EMSCAD, ASI1 extraction and explanation with fallbacks, live website checks, Hinglish red flags, an ASI:One card with "How do I report this?", a local demo, and 66 offline tests.
 
 **Next:**
 - 📸 Read **screenshots** of offers, since most scams arrive as images on WhatsApp.
