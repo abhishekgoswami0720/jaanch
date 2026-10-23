@@ -37,7 +37,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # 1. Target mapping & schema tests
 def test_target_mapping():
-    mapping_path = ROOT / "data" / "labels" / "target_mapping.json"
+    candidates = [ROOT / d / "labels" / "target_mapping.json" for d in ("data", "Data")]
+    mapping_path = next((c for c in candidates if c.exists()), candidates[0])
     assert mapping_path.exists(), "target_mapping.json must exist"
     with open(mapping_path, "r", encoding="utf-8") as f:
         mapping = json.load(f)

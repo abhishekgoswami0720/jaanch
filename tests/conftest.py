@@ -11,7 +11,7 @@ NOW = datetime(2026, 10, 21, tzinfo=timezone.utc)
 
 # Pretend internet: domain -> (registration date or None, has MX, exists)
 WORLD = {
-    "zoho.com": ("1996-08-26T04:00:00Z", True, True),
+    "zoho.com": ("2004-01-16T19:05:15Z", True, True),
     "internshala.com": ("2010-06-29T08:53:10Z", True, True),
     "infosys-careers.in": ("2026-10-09T11:02:00Z", False, True),
     "infosys.com": ("1992-03-30T05:00:00Z", True, True),
@@ -27,7 +27,10 @@ def make_fetch(world=None, fail=False):
     async def fetch(url: str):
         if fail:
             raise ConnectionError("network down")
-        if "rdap.org/domain/" in url:
+        if "data.iana.org/rdap" in url:
+            return 200, {"services": [[["com", "net"], ["https://rdap.registry.test/com/v1/"]],
+                                      [["in"], ["http://old.test/", "https://rdap.registry.test/in/"]]]}
+        if "/domain/" in url:
             domain = url.rsplit("/", 1)[1]
             if domain not in world or not world[domain][2]:
                 return 404, None

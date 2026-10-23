@@ -34,14 +34,14 @@ flowchart LR
     A["📩 You paste the offer<br/>into ASI:One"] --> B["🧠 Jaanch reads it<br/>company, pay, fee,<br/>emails, links"]
     B --> C["🌐 Website checker<br/>How old is the website?<br/>Does it copy a big brand?<br/>Can it even receive email?"]
     B --> D["🚩 Red-flag checker<br/>Asks for money or OTP?<br/>Moves you to Telegram?<br/>Rushes you?"]
-    B --> ML["🤖 ML Scam Classifier<br/>Trained on 17k+ real job postings<br/>Matches fraudulent patterns"]
+    B --> ML["🤖 ML text check (optional)<br/>Trained on 17k+ job postings<br/>Runs only if the model file is present"]
     C --> E["🔢 Adds up the points<br/>score from 1 to 10"]
     D --> E
     ML --> E
     E --> F["💬 Plain answer<br/>score + reasons +<br/>what to do next"]
 ```
 
-Two helper agents do the checking at the same time, accompanied by an embedded ML text classifier trained on real-world job scam data. Job-search and career agents can also ask Jaanch to check a listing *before* they show it to you.
+Two helper agents do the checking at the same time, and an optional ML text classifier inside the main agent adds one more signal when its model file is present. Job-search and career agents can also ask Jaanch to check a listing *before* they show it to you.
 
 ---
 
@@ -138,7 +138,7 @@ sequenceDiagram
     participant J as jaanch
     participant D as jaanch-domain-intel
     participant P as jaanch-pattern-check
-    participant M as jaanch-ml-detector
+    participant M as ML model (inside jaanch)
     U->>J: ChatMessage (the offer)
     J->>J: ASI1 + rules extract company, pay, fee, emails, links
     par checks run in parallel
@@ -208,7 +208,7 @@ Outputs confusion matrix, scam precision/recall/F1, PR-AUC, and baseline compari
   * Legitimate Precision: 98.77% | Legitimate Recall: 99.12%
 
 ### 5. Enabling / Disabling ML Inference
-ML inference is enabled by default if the model artifact exists. You can toggle it via environment variable:
+The trained model file (`models/job_scam_model.joblib`) is **not in this repo** because of its size. Build it with steps 1–3 above; without it, Jaanch skips this check and scores on the domain and red-flag evidence alone. ML inference is enabled by default if the model artifact exists. You can toggle it via environment variable:
 * Enable: `JAANCH_ENABLE_ML=1`
 * Disable: `JAANCH_ENABLE_ML=0`
 * Custom model path: `JAANCH_ML_MODEL_PATH=path/to/custom_model.joblib`
@@ -237,7 +237,7 @@ python scripts/check.py samples/scam_fee_whatsapp.txt     # one check, no agents
 JAANCH_MAILBOX=0 python scripts/local_demo.py             # all agents + test clients, locally
 python run.py                                             # all agents, connected to Agentverse
 python run.py jaanch    # or: domain / pattern; one agent per terminal
-pytest -v                                                 # 66 tests, no network needed
+pytest -q                                                 # 68 tests, no network needed (4 skip until you build the ML model)
 ```
 
 On Windows, set variables with `set JAANCH_MAILBOX=0` before the command.
@@ -279,7 +279,7 @@ run.py         starts the agents
 
 ## What's built and what's next
 
-**Built:** three agents with the Chat Protocol and a public verification protocol, an ML recruitment scam classifier trained on EMSCAD, ASI1 extraction and explanation with fallbacks, live website checks, Hinglish red flags, an ASI:One card with "How do I report this?", a local demo, and 66 offline tests.
+**Built:** three agents with the Chat Protocol and a public verification protocol, an ML recruitment scam classifier trained on EMSCAD, ASI1 extraction and explanation with fallbacks, live website checks, Hinglish red flags, an ASI:One card with "How do I report this?", a local demo, and 68 offline tests.
 
 **Next:**
 - 📸 Read **screenshots** of offers, since most scams arrive as images on WhatsApp.

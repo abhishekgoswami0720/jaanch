@@ -159,6 +159,18 @@ def predict_offer(
 
     threshold = threshold_override if threshold_override is not None else default_threshold
 
+    # Validate input text
+    if not text or not isinstance(text, str) or not text.strip():
+        return MLPredictionResult(
+            model_available=pipeline is not None,
+            predicted_class=None,
+            scam_score=None,
+            score_type="unavailable",
+            threshold=threshold,
+            model_version=model_version,
+            warning="Input text is empty or invalid.",
+        )
+
     if pipeline is None:
         return MLPredictionResult(
             model_available=False,
@@ -168,18 +180,6 @@ def predict_offer(
             threshold=threshold,
             model_version=model_version,
             warning="ML model artifact not loaded or disabled.",
-        )
-
-    # Validate input text
-    if not text or not isinstance(text, str) or not text.strip():
-        return MLPredictionResult(
-            model_available=True,
-            predicted_class=None,
-            scam_score=None,
-            score_type="unavailable",
-            threshold=threshold,
-            model_version=model_version,
-            warning="Input text is empty or invalid.",
         )
 
     try:

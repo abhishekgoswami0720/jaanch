@@ -66,7 +66,7 @@ def test_rdap_missing_is_not_treated_as_fake():
     world = {"swiggy.in": (None, True, True)}
 
     async def fetch(url):
-        if "rdap.org" in url:
+        if "/domain/" in url:
             return 404, None
         return await make_fetch(world)(url)
 
@@ -156,3 +156,34 @@ def test_email_local_part_is_not_a_domain():
 def test_brand_display_names():
     sigs = check_patterns(extract_rules("TCS hiring! mail tcs.jobs@gmail.com")).signals
     assert any("TCS" in s.label for s in sigs)
+
+
+def test_rdap_goes_to_the_registry_first():
+    """rdap.org can refuse scripts (HTTP 403), so ask the registry IANA lists for the ending."""
+    import jaanch.domain_intel as di
+    di._rdap_servers.clear()
+    asked = []
+    base = make_fetch()
+
+    async def fetch(url):
+        asked.append(url)
+        return await base(url)
+
+    report = asyncio.run(check_domains(extract_rules("Apply at https://careers.zoho.com"), fetch=fetch, now=NOW))
+    assert "https://rdap.registry.test/com/v1/domain/zoho.com" in asked
+    assert not any("rdap.org" in u for u in asked)
+    assert any(s.id == "domain_old" for s in report.signals)
+
+
+def test_rdap_falls_back_to_rdap_org_when_registry_refuses():
+    import jaanch.domain_intel as di
+    di._rdap_servers.clear()
+    base = make_fetch()
+
+    async def fetch(url):
+        if "rdap.registry.test" in url:
+            return 403, None
+        return await base(url)
+
+    report = asyncio.run(check_domains(extract_rules("Apply at https://careers.zoho.com"), fetch=fetch, now=NOW))
+    assert any(s.id == "domain_old" for s in report.signals)
