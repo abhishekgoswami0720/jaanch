@@ -1,6 +1,7 @@
 """Live checks on the domains and email addresses in an offer.
 
-- Domain age from RDAP (the public successor to WHOIS), via the rdap.org bootstrap.
+- Domain age from RDAP (the public successor to WHOIS). We ask each registry's own
+  RDAP server, found through IANA's official list, and fall back to rdap.org.
 - Whether the email domain can receive mail at all (MX records over DNS-over-HTTPS).
 - Lookalikes of well-known employers (infosys-careers.in, tcs-hr.co, wipr0.com).
 
@@ -18,20 +19,54 @@ from .extract import display_brand, find_brands
 from .models import DomainReport, OfferFacts, Signal
 
 SOURCE = "domain-agent"
-RDAP_URL = "https://rdap.org/domain/{domain}"
+RDAP_URL = "https://rdap.org/domain/{domain}"  # fallback only
+IANA_RDAP_BOOTSTRAP = "https://data.iana.org/rdap/dns.json"
 DOH_URL = "https://dns.google/resolve?name={domain}&type=MX"
+USER_AGENT = "Jaanch/1.0 (job-scam checker; https://github.com/abhishekgoswami0720/jaanch)"
 
 Fetcher = Callable[[str], Awaitable[tuple[int, Optional[dict]]]]
+
+_rdap_servers: dict[str, str] = {}  # tld -> registry RDAP base URL, filled once from IANA
 
 
 async def http_json(url: str) -> tuple[int, Optional[dict]]:
     timeout = aiohttp.ClientTimeout(total=8)
-    headers = {"Accept": "application/rdap+json, application/json"}
+    headers = {"Accept": "application/rdap+json, application/json", "User-Agent": USER_AGENT}
     async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
         async with session.get(url, allow_redirects=True) as resp:
             if resp.status != 200:
                 return resp.status, None
             return resp.status, await resp.json(content_type=None)
+
+
+async def rdap_server_for(domain: str, fetch: Fetcher) -> Optional[str]:
+    """The registry's own RDAP server for this domain's ending (.com, .in, ...)."""
+    if not _rdap_servers:
+        try:
+            status, data = await fetch(IANA_RDAP_BOOTSTRAP)
+        except Exception:
+            data = None
+        for entry in (data or {}).get("services", []):
+            if len(entry) < 2 or not entry[1]:
+                continue
+            urls = entry[1]
+            base = next((u for u in urls if u.startswith("https://")), urls[0])
+            for tld in entry[0]:
+                _rdap_servers[tld.lower()] = base if base.endswith("/") else base + "/"
+    return _rdap_servers.get(domain.rsplit(".", 1)[-1].lower())
+
+
+async def rdap_lookup(domain: str, fetch: Fetcher) -> tuple[int, Optional[dict]]:
+    """Ask the registry directly; if that fails, try the rdap.org redirector."""
+    base = await rdap_server_for(domain, fetch)
+    if base:
+        try:
+            status, data = await fetch(f"{base}domain/{domain}")
+            if status in (200, 404):
+                return status, data
+        except Exception:
+            pass
+    return await fetch(RDAP_URL.format(domain=domain))
 
 
 def registration_date(rdap: dict) -> Optional[datetime]:
@@ -95,7 +130,7 @@ async def check_domain(domain: str, fetch: Fetcher, now: datetime) -> tuple[list
             id="lookalike", label=f"{domain} imitates {display_brand(brand)} (official site: {official})",
             weight=3.0, evidence=domain, source=SOURCE))
 
-    rdap_task = fetch(RDAP_URL.format(domain=domain))
+    rdap_task = rdap_lookup(domain, fetch)
     mx_task = fetch(DOH_URL.format(domain=domain))
     rdap_res, mx_res = await asyncio.gather(rdap_task, mx_task, return_exceptions=True)
 
