@@ -18,7 +18,7 @@
 | Multi-agent orchestration and tools | `jaanch` sends each offer to 3 specialist agents in parallel (website checks, red flags, Reddit) and calls live services: RDAP domain registries, Google DNS, Reddit, ASI1 |
 | Interactive Cards | Every verdict is a card with evidence and buttons: *How do I report this?*, *Copy Cybercrime Docket*, *Signed report*, *Check another offer* |
 | Payment Protocol | *Signed report* asks for 0.1 FET, checks the payment on the Fetch.ai ledger, then delivers a report signed by the agent ([details](#payment-protocol-signed-evidence-reports)) |
-| Reliability | If a specialist doesn't answer in 20 s, `jaanch` runs that check itself; if ASI1 is down, rules take over; failed lookups are reported, never guessed |
+| Reliability | If the website or red-flag agent doesn't answer in 12 s, `jaanch` runs that check itself (the optional Reddit check is skipped); if ASI1 is down, rules take over; failed lookups are reported, never guessed |
 | Keeps running after the hackathon | Shared scam memory grows with every check; students stay free, placement cells and job boards pay per report or per check |
 
 ---

@@ -69,10 +69,9 @@ from jaanch.models import (
 )
 from jaanch.patterns import check_patterns
 from jaanch.pipeline import Result, combine
-from jaanch.reputation import check_reputation
 
 HERE = Path(__file__).parent
-SPECIALIST_TIMEOUT = 20
+SPECIALIST_TIMEOUT = 12  # seconds; after this jaanch answers without waiting
 
 chat_proto = Protocol(spec=chat_protocol_spec)
 verify_proto = Protocol(name="JaanchOfferVerification", version="1.0.0")
@@ -114,7 +113,8 @@ async def investigate(ctx: Context, text: str) -> tuple[Result, bool]:
     if pattern is None:
         pattern = check_patterns(facts)
     if reputation is None:
-        reputation = await check_reputation(facts)
+        # Reddit is extra evidence, not essential: answer now instead of searching again.
+        reputation = ReputationReport(errors=["reputation agent didn't answer in time; Reddit check skipped"])
     pred = predict_offer(facts.text)
     ml_sig = pred.to_signal()
     # Shared scam memory

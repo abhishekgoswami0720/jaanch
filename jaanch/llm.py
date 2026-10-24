@@ -45,13 +45,16 @@ def _key() -> Optional[str]:
     return os.getenv("ASI1_API_KEY") or os.getenv("ASI_ONE_API_KEY")
 
 
+LLM_TIMEOUT = float(os.getenv("JAANCH_LLM_TIMEOUT", "12"))  # seconds; rules/templates take over after this
+
+
 async def _chat(messages: list[dict], max_tokens: int = 400) -> Optional[str]:
     key = _key()
     if not key:
         return None
     body = {"model": MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0}
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
-    timeout = aiohttp.ClientTimeout(total=25)
+    timeout = aiohttp.ClientTimeout(total=LLM_TIMEOUT)
     async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(ASI1_URL, json=body, headers=headers) as resp:
             if resp.status != 200:
@@ -138,6 +141,8 @@ async def explain(user_text: str, risk: int, verdict_text: str, signals: list[Si
                 f"Verdict: {verdict_text}\nRisk score: {risk}/10\nEvidence:\n{evidence or '- none'}"
             )},
         ], max_tokens=300)
+        if out:
+            out = re.sub(r"(?m)^[ \t]*\d+[.)][ \t]*$\n?", "", out).strip()  # drop empty list items
         if out and f"{risk}/10" in out:
             return out.strip()
         if out:

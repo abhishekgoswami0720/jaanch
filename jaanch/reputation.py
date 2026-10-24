@@ -25,7 +25,7 @@ Fetcher = Callable[[str], Awaitable[tuple[int, Optional[dict]]]]
 
 
 async def default_http_json(url: str) -> tuple[int, Optional[dict]]:
-    timeout = aiohttp.ClientTimeout(total=8)
+    timeout = aiohttp.ClientTimeout(total=5)
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     try:
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
@@ -79,40 +79,36 @@ async def check_reputation(
         if d not in PLATFORM_DOMAINS and "." in d and d not in targets:
             targets.append(d)
 
-    for target in targets[:2]:  # check top 2 targets to stay fast
+    async def lookup(target: str):
         query = f'"{target}" (scam OR fake OR fraud OR internship)'
-        checked_queries.append(target)
         url = REDDIT_SEARCH_URL.format(query=urllib.parse.quote(query))
-
         try:
-            status, data = await fetcher(url)
-            if status == 200 and data and isinstance(data, dict):
-                children = data.get("data", {}).get("children", [])
-                hit_count, samples = analyze_reddit_posts(target, children)
-                
-                if hit_count >= 2:
-                    signals.append(
-                        Signal(
-                            id="community_scam_reports",
-                            label=f"Community & Reddit discussions flag '{target}' for scam/fraud complaints",
-                            weight=2.5,
-                            evidence="; ".join(samples[:2]),
-                            source=SOURCE,
-                        )
-                    )
-                elif hit_count == 1:
-                    signals.append(
-                        Signal(
-                            id="community_warning",
-                            label=f"Reddit discussion mentions suspicious activity regarding '{target}'",
-                            weight=1.0,
-                            evidence=samples[0],
-                            source=SOURCE,
-                        )
-                    )
-            elif status not in (200, 404):
-                errors.append(f"Reddit lookup returned HTTP {status} for {target}")
+            return target, await fetcher(url), None
         except Exception as err:
+            return target, None, err
+
+    # Both searches run at the same time, so a slow Reddit costs one timeout, not two.
+    targets = targets[:2]
+    checked_queries.extend(targets)
+    for target, response, err in await asyncio.gather(*(lookup(t) for t in targets)):
+        if err is not None or response is None:
             errors.append(f"Reputation lookup failed for {target}: {err}")
+            continue
+        status, data = response
+        if status == 200 and data and isinstance(data, dict):
+            children = data.get("data", {}).get("children", [])
+            hit_count, samples = analyze_reddit_posts(target, children)
+            if hit_count >= 2:
+                signals.append(Signal(
+                    id="community_scam_reports",
+                    label=f"Community & Reddit discussions flag '{target}' for scam/fraud complaints",
+                    weight=2.5, evidence="; ".join(samples[:2]), source=SOURCE))
+            elif hit_count == 1:
+                signals.append(Signal(
+                    id="community_warning",
+                    label=f"Reddit discussion mentions suspicious activity regarding '{target}'",
+                    weight=1.0, evidence=samples[0], source=SOURCE))
+        elif status not in (200, 404):
+            errors.append(f"Reddit lookup returned HTTP {status} for {target}")
 
     return ReputationReport(signals=signals, checked=checked_queries, errors=errors)

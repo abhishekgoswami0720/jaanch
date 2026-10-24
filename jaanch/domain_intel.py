@@ -30,7 +30,7 @@ _rdap_servers: dict[str, str] = {}  # tld -> registry RDAP base URL, filled once
 
 
 async def http_json(url: str) -> tuple[int, Optional[dict]]:
-    timeout = aiohttp.ClientTimeout(total=8)
+    timeout = aiohttp.ClientTimeout(total=5)
     headers = {"Accept": "application/rdap+json, application/json", "User-Agent": USER_AGENT}
     async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
         async with session.get(url, allow_redirects=True) as resp:

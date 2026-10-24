@@ -92,7 +92,7 @@ Jaanch operates 4 specialized agents actively hosted on Fetch.ai's Agentverse:
 | **`jaanch`** (`@jaanch-scam-check`) | User interaction in ASI:One, document analysis, multi-agent dispatch, payment settlement | `AgentChatProtocol 0.3.0`<br>`JaanchOfferVerification 1.0.0`<br>`AgentPaymentProtocol 0.1.0` | `agent1qvvzp4xwu6c9ct6xrj8swxeet8aep6g36jf5cafegdfzh633zq3n7m4sd5u` |
 | **`jaanch-domain-intel`** | Live RDAP registry lookups, domain age, DNS MX mail servers, typosquatting & brand lookalike checks | `JaanchDomainIntel 0.1.0` | `agent1qgu0xxylvpa9kv7he3vux9kj5x2l9ffdlad0hsh84nv23vf7avyw68j33th` |
 | **`jaanch-pattern-check`** | 20+ specialized fraud pattern heuristics (advance fee demands, UPI handles, WhatsApp migration, task scams) | `JaanchPatternCheck 0.1.0` | `agent1qtwpt528nq7x73s3jxwtpfq9056wltxkwwn8d5393cdd2e4rpyxkjm34s46` |
-| **`jaanch-reputation-intel`** | Real-time Reddit community sentiment, blacklist queries (`r/developersIndia`, `r/Indian_Academia`) | `JaanchReputationIntel 0.1.0` | `agent1qtg4nqryw3sqduwj9gvmkjdkl5kaut4eccujk5eekjmj298cgpvzjmd8gx7` |
+| **`jaanch-reputation-intel`** | Live Reddit search for scam and upfront-fee complaints about the company or website | `JaanchReputationIntel 0.1.0` | `agent1q29dnuhez2wd97nsz2vgtjd5dcpkd6pv9rqhmag07zqckdcpwc4jzfnwgq0` |
 
 ---
 
@@ -142,7 +142,7 @@ Jaanch operates 4 specialized agents actively hosted on Fetch.ai's Agentverse:
     - `🔄 Check another offer`: Resets the session with instructions.
 
 #### 3. Strong Reliability & Graceful Recovery
-- **Specialist Agent Fallbacks:** If any specialist agent (`domain`, `pattern`, `reputation`) does not reply within 20 seconds, Jaanch runs the analysis locally without dropping the user's conversation.
+- **Specialist Agent Fallbacks:** If the `domain` or `pattern` agent does not reply within 12 seconds, Jaanch runs that check itself; if the optional `reputation` (Reddit) agent is slow, Jaanch answers without it.
 - **LLM Degradation Recovery:** If the ASI1 API is unavailable or rate-limited, Jaanch automatically falls back to regex extraction, rule-based heuristics, and the trained ML model.
 - **Network Resilience:** If WHOIS/RDAP servers throttle requests, domain age errors are logged gracefully without failing the overall risk score.
 
@@ -176,7 +176,7 @@ cp .env.example .env
 #### 2. Run the Full Test Suite
 ```bash
 pytest -v
-# Output: 117 passed in ~17s
+# Output: 113 passed, 4 skipped (the 4 need the optional ML dataset)
 ```
 
 #### 3. Run Autonomous B2B Multi-Agent Placement Screening
