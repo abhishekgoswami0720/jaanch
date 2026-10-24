@@ -240,3 +240,36 @@ def test_rdap_falls_back_to_rdap_org_when_registry_refuses():
 
     report = asyncio.run(check_domains(extract_rules("Apply at https://careers.zoho.com"), fetch=fetch, now=NOW))
     assert any(s.id == "domain_old" for s in report.signals)
+
+
+# ---- paid "training + internship" forwards (real WhatsApp messages, redacted) ----
+
+@pytest.mark.parametrize("name", [
+    "real/01_brand_names_training.txt", "real/02_iit_collaboration_training.txt",
+    "real/04_wipro_tcs_mentor_fees.txt",
+])
+def test_paid_training_internships_are_high_risk(name):
+    r = run(sample(name))
+    assert r.verdict == "high_risk", (r.risk, [(s.id, s.weight) for s in r.signals])
+
+
+def test_paid_qualifier_is_at_least_suspicious():
+    r = run(sample("real/05_iit_certification_qualifier.txt"))
+    assert r.verdict in {"suspicious", "high_risk"}, (r.risk, [(s.id, s.weight) for s in r.signals])
+
+
+def test_affiliation_backed_by_official_domain_is_not_flagged():
+    text = "Summer research internship in collaboration with IIT Delhi. Apply at https://www.iitd.ac.in/internships"
+    ids = {s.id for s in check_patterns(extract_rules(text)).signals}
+    assert "fake_affiliation" not in ids
+
+
+def test_one_fee_is_not_counted_twice():
+    ids = [s.id for s in run(sample("scam_fee_whatsapp.txt")).signals]
+    assert "fee_demand" in ids and "course_upsell_bait" not in ids
+
+
+def test_part_time_earn_daily_whatsapp():
+    r = run("Part time job! Earn ₹2000-5000 daily from home, just need a phone. Contact HR on WhatsApp 98XXXXXXXX")
+    ids = {s.id for s in r.signals}
+    assert {"easy_money", "off_platform"} <= ids and r.verdict != "low_risk"

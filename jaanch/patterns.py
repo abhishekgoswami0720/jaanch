@@ -6,7 +6,7 @@ adds them up. Keywords include common Hinglish phrasing used in WhatsApp scams.
 
 import re
 
-from .brands import ATS_DOMAINS, PUBLIC_FORM_DOMAINS, URL_SHORTENERS
+from .brands import ALL_OFFICIAL, ATS_DOMAINS, PUBLIC_FORM_DOMAINS, URL_SHORTENERS
 from .extract import display_brand, find_brands, free_mail_used
 from .models import OfferFacts, PatternReport, Signal
 
@@ -29,7 +29,22 @@ RULES: list[tuple[str, str, float, str]] = [
         r"(course|training|mentorship|certification)\s+(fee|charges?|price|cost|pack)"
         r"|(internship|program)\s+cum\s+training|training\s+plus\s+internship"
         r"|must\s+complete\s+(the\s+)?(training|course|module)\s+(before|to\s+get|for)\s+(internship|stipend)"
-        r"|mentor(?:ship)?\s+(fee|charges|deposit)",
+        r"|mentor(?:ship)?\s+(fee|charges|deposit)"
+        r"|fees?\s+structure|(small|nominal|minimal|one[\s-]time|token)\s+(fees?|charges?|amount|registration)"
+        r"|(qualifier|entrance\s+test|course|certification)[^.\n]{0,25}(rs\.?|inr|₹)\s?\d",
+    ),
+    (
+        "training_bundle",
+        "Sells a 'training + internship' program: usually a paid course dressed up as an internship",
+        1.0,
+        r"training\s*(\+|and|&|cum|plus|with)\s*internships?|internships?\s*(\+|and|&|cum|plus|with)\s*training"
+        r"|(education|career|admission)\s+counsel+or",
+    ),
+    (
+        "placement_guarantee",
+        "Promises 100% or guaranteed placement",
+        1.5,
+        r"100\s*%\s*(placement|job)|guaranteed\s+(placement|job|internship)|(placement|job)\s+guarantee",
     ),
     (
         "secret_data",
@@ -61,7 +76,7 @@ RULES: list[tuple[str, str, float, str]] = [
         "off_platform",
         "Moves the conversation to Telegram or a WhatsApp group/chat",
         2.0,
-        r"t\.me/|telegram|wa\.me/|chat\.whatsapp\.com/|whatsapp\s+(group|only|me|karo|kare)|contact\s+(on|via)\s+whatsapp|dm\s+on\s+telegram",
+        r"t\.me/|telegram|wa\.me/|chat\.whatsapp\.com/|whatsapp\s+(group|only|me|karo|kare)|(contact|message|text|ping|dm)\s+(hr\s+|us\s+|me\s+)?(on|via)\s+whatsapp|whatsapp\s*(:|-|no\.?|number|on)\s*\+?\d|dm\s+on\s+telegram",
     ),
     (
         "easy_money",
@@ -69,13 +84,16 @@ RULES: list[tuple[str, str, float, str]] = [
         2.0,
         r"(earn|kamao|income|salary|payout)[^.\n]{0,30}(rs\.?|inr|₹)\s?\d[\d,]*\s*(/|per|a|daily|every)\s*(day|hour|hr|task)"
         r"|(rs\.?|inr|₹)\s?\d[\d,]*\s*(/|per|a)\s*(day|hour|hr|task)"
-        r"|daily\s+(payout|payment|income)|ghar\s+baithe|work\s+from\s+home[^.\n]{0,40}(earn|daily)",
+        r"|daily\s+(payout|payment|income)|ghar\s+baithe|work\s+from\s+home[^.\n]{0,40}(earn|daily)"
+        r"|(rs\.?|inr|₹)\s?\d[\d,]*\s*(-|to)\s*(rs\.?|inr|₹)?\s?\d[\d,]*\s*(/|per|a|every)?\s*(day|daily|hour|hr|task)"
+        r"|(earn|kamao|income|earning)[^.\n]{0,40}\b(daily|per\s+day|a\s+day|roz)\b"
+        r"|just\s+need\s+(a\s+)?(phone|mobile|smartphone)|no\s+experience\s+(needed|required)[^.\n]{0,40}(earn|₹|rs)",
     ),
     (
         "bait_stipend",
         "Vague or performance-conditional stipend claim ('Up To ₹...')",
         1.0,
-        r"stipend\s*:\s*up\s*to\s*(?:rs\.?|inr|₹)?\s?\d|up\s*to\s*(?:rs\.?|inr|₹)\s?\d[\d,]*\s*(?:stipend|per\s*month|pm)?"
+        r"stipend\s*:?\s*up\s*to\s*(?:rs\.?|inr|₹)?\s?\d|up\s*to\s*(?:rs\.?|inr|₹)\s?\d[\d,]*\s*(?:stipend|per\s*month|pm)?"
         r"|performance[\s-]based\s+stipend|stipend[^.\n]{0,25}based\s+on\s+performance",
     ),
     (
@@ -92,7 +110,9 @@ RULES: list[tuple[str, str, float, str]] = [
         1.0,
         r"within\s+\d+\s*(hours?|hrs?|minutes?)|limited\s+(seats|slots|vacanc)|last\s+date\s+(is\s+)?today"
         r"|immediate(ly)?\s+(joining|payment|response)|only\s+(few|\d+)\s+(seats|slots)|jaldi|abhi\s+pay"
-        r"|induction\s*:\s*today|induction\s+session\s+today|today\s+at\s+\d{1,2}:\d{2}",
+        r"|induction\s*:\s*today|induction\s+session\s+today|today\s+at\s+\d{1,2}:\d{2}"
+        r"|last\s+chance|final\s+chance|hurry\s+up|no\s+extensions?|first\s+come,?\s+first\s+serve"
+        r"|(seats?|slots?|registrations?)\s+(are\s+)?(closing|filling)|only\s+\d+\s+\w+\s+(seats|slots)\s+left",
     ),
     (
         "generic_greeting",
@@ -123,6 +143,14 @@ RULES: list[tuple[str, str, float, str]] = [
 ]
 
 _COMPILED = [(i, l, w, re.compile(p, re.IGNORECASE)) for i, l, w, p in RULES]
+
+_BIG_NAMES = (r"iit|iim|nit|iisc|aiims|indian\s+institute|microsoft|google|ibm|meta|amazon|wipro|tcs|infosys"
+              r"|accenture|cisco|apple|oracle|deloitte|isro|drdo|nasscom|aicte")
+_AFFILIATION = re.compile(
+    r"(collaboration|collab|association|partnership|tie[\s-]?up|partnered)\s+with\s+[^.\n]{0,60}?\b(" + _BIG_NAMES + r")\b"
+    r"|powered\s*(by)?\s+(ibm|microsoft|meta|google|amazon)|certified\s+by\s+(" + _BIG_NAMES + r")\b",
+    re.IGNORECASE,
+)
 
 
 def _snippet(text: str, m: re.Match, pad: int = 30) -> str:
@@ -178,8 +206,22 @@ def check_patterns(facts: OfferFacts) -> PatternReport:
         signals.append(Signal(id="freemail", label="Recruiter writes from a free email address",
                               weight=1.0, evidence=", ".join(free), source=SOURCE))
 
+    # "In collaboration with IIT / Microsoft" with no link to that institution or company
+    claim = _first_unnegated(_AFFILIATION, text)
+    own_domains = set(facts.domains) | {e.split("@", 1)[1] for e in facts.emails}
+    official = any(d in ALL_OFFICIAL or d.endswith((".ac.in", ".edu", ".edu.in", ".gov.in", ".nic.in"))
+                   for d in own_domains)
+    if claim and not official:
+        signals.append(Signal(id="fake_affiliation",
+                              label="Claims a tie-up with an IIT or a big company, but gives no official link to prove it",
+                              weight=2.0, evidence=_snippet(text, claim), source=SOURCE))
+
     # Public forms (Google Forms, linktree) used for big company recruitment
     public_forms = sorted(set(facts.domains) & PUBLIC_FORM_DOMAINS)
+    if public_forms and not brands and re.search(r"regist|enrol|apply|internship", text, re.I):
+        signals.append(Signal(id="public_form_recruitment",
+                              label="Collects registrations on a Google Form instead of a company website",
+                              weight=1.0, evidence=", ".join(public_forms), source=SOURCE))
     if public_forms and brands:
         signals.append(
             Signal(
