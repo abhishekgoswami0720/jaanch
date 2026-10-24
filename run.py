@@ -22,8 +22,10 @@ from agents.orchestrator import build_orchestrator  # noqa: E402
 from agents.specialists import (  # noqa: E402
     DOMAIN_DEV_SEED,
     PATTERN_DEV_SEED,
+    REPUTATION_DEV_SEED,
     build_domain_agent,
     build_pattern_agent,
+    build_reputation_agent,
 )
 
 MAILBOX = os.getenv("JAANCH_MAILBOX", "1") != "0"
@@ -36,12 +38,14 @@ def _address(seed_var: str, dev_seed: str) -> str:
 def build_bureau(port: int = 8000, extra_agents=()) -> Bureau:
     domain = build_domain_agent(MAILBOX)
     pattern = build_pattern_agent(MAILBOX)
-    jaanch = build_orchestrator(MAILBOX, domain.address, pattern.address)
-    print(f"jaanch (talk to this one): {jaanch.address}")
-    print(f"jaanch-domain-intel:       {domain.address}")
-    print(f"jaanch-pattern-check:      {pattern.address}")
+    reputation = build_reputation_agent(MAILBOX)
+    jaanch = build_orchestrator(MAILBOX, domain.address, pattern.address, reputation.address)
+    print(f"jaanch (talk to this one):     {jaanch.address}")
+    print(f"jaanch-domain-intel:           {domain.address}")
+    print(f"jaanch-pattern-check:          {pattern.address}")
+    print(f"jaanch-reputation-intel:       {reputation.address}")
     bureau = Bureau(port=port, endpoint=[f"http://127.0.0.1:{port}/submit"])
-    for agent in (jaanch, domain, pattern, *extra_agents):
+    for agent in (jaanch, domain, pattern, reputation, *extra_agents):
         bureau.add(agent)
     return bureau
 
@@ -49,13 +53,16 @@ def build_bureau(port: int = 8000, extra_agents=()) -> Bureau:
 def run_single(which: str, port: int) -> None:
     if which == "jaanch":
         agent = build_orchestrator(MAILBOX, _address("JAANCH_DOMAIN_SEED", DOMAIN_DEV_SEED),
-                                   _address("JAANCH_PATTERN_SEED", PATTERN_DEV_SEED), port=port)
+                                   _address("JAANCH_PATTERN_SEED", PATTERN_DEV_SEED),
+                                   _address("JAANCH_REPUTATION_SEED", REPUTATION_DEV_SEED), port=port)
     elif which == "domain":
         agent = build_domain_agent(MAILBOX, port=port)
     elif which == "pattern":
         agent = build_pattern_agent(MAILBOX, port=port)
+    elif which == "reputation":
+        agent = build_reputation_agent(MAILBOX, port=port)
     else:
-        sys.exit("usage: python run.py [jaanch|domain|pattern]")
+        sys.exit("usage: python run.py [jaanch|domain|pattern|reputation]")
     print(f"{agent.name}: {agent.address}")
     agent.run()
 

@@ -31,11 +31,13 @@ from jaanch.models import (
     DomainReport,
     OfferFacts,
     PatternReport,
+    ReputationReport,
     VerifyOfferRequest,
     VerifyOfferResponse,
 )
 from jaanch.patterns import check_patterns
 from jaanch.pipeline import Result, combine
+from jaanch.reputation import check_reputation
 
 HERE = Path(__file__).parent
 SPECIALIST_TIMEOUT = 20
@@ -44,7 +46,7 @@ chat_proto = Protocol(spec=chat_protocol_spec)
 verify_proto = Protocol(name="JaanchOfferVerification", version="1.0.0")
 
 # Filled in by build_orchestrator()
-SPECIALISTS = {"domain": "", "pattern": ""}
+SPECIALISTS = {"domain": "", "pattern": "", "reputation": ""}
 
 
 async def _ask(ctx: Context, address: str, facts: OfferFacts, reply_type):
@@ -63,9 +65,10 @@ async def _ask(ctx: Context, address: str, facts: OfferFacts, reply_type):
 
 async def investigate(ctx: Context, text: str) -> tuple[Result, bool]:
     facts, is_offer = await llm.extract(text, logger=ctx.logger)
-    domain, pattern = await asyncio.gather(
+    domain, pattern, reputation = await asyncio.gather(
         _ask(ctx, SPECIALISTS["domain"], facts, DomainReport),
         _ask(ctx, SPECIALISTS["pattern"], facts, PatternReport),
+        _ask(ctx, SPECIALISTS["reputation"], facts, ReputationReport),
     )
     # Recovery: do the work locally if a specialist is down.
     if domain is None:
@@ -73,9 +76,11 @@ async def investigate(ctx: Context, text: str) -> tuple[Result, bool]:
         domain.errors.append("domain agent unavailable; checked locally")
     if pattern is None:
         pattern = check_patterns(facts)
+    if reputation is None:
+        reputation = await check_reputation(facts)
     pred = predict_offer(facts.text)
     ml_sig = pred.to_signal()
-    return combine(facts, domain, pattern, ml_signal=ml_sig), is_offer
+    return combine(facts, domain, pattern, ml_signal=ml_sig, reputation=reputation), is_offer
 
 
 def _strip_mention(text: str) -> str:
@@ -162,9 +167,10 @@ async def on_verify(ctx: Context, sender: str, req: VerifyOfferRequest):
 
 
 def build_orchestrator(mailbox: bool, domain_address: str, pattern_address: str,
-                       port: int | None = None) -> Agent:
+                       reputation_address: str = "", port: int | None = None) -> Agent:
     SPECIALISTS["domain"] = domain_address
     SPECIALISTS["pattern"] = pattern_address
+    SPECIALISTS["reputation"] = reputation_address
     seed = os.getenv("JAANCH_SEED")
     if not seed:
         print("[warn] JAANCH_SEED not set; using a public dev seed. Set your own before deploying.")

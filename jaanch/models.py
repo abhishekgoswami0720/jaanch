@@ -45,6 +45,12 @@ class PatternReport(Model):
     signals: List[Signal] = []
 
 
+class ReputationReport(Model):
+    signals: List[Signal] = []
+    checked: List[str] = []
+    errors: List[str] = []
+
+
 # ---- Public protocol other agents can call before they recommend a listing ----
 
 

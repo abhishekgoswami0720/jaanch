@@ -63,6 +63,7 @@ Every offer starts at **2**. Each warning sign adds points and each good sign ta
 | 👍 Pays you for **"tasks"** like liking videos or writing reviews | **+3** |
 | 📧 Says it's a big company but emails from **Gmail, Yahoo or Outlook** | **+2.5** |
 | 📄 Asks for **blank/cancelled cheque, original marksheets, or bond** | **+2.5** |
+| 🌐 **Reddit & Community discussions** flag company/domain for scam or fraud | **+2.5** |
 | ✈️ Moves you to **Telegram or a WhatsApp group / chat** (`chat.whatsapp.com`) | **+2** |
 | 🤑 Promises **a lot of money for very little work** | **+2** |
 | ❓ The website **doesn't exist** at all | **+2** |
@@ -141,6 +142,7 @@ In ASI:One, tap **"How do I report this?"** on Jaanch's answer to get these step
 | `jaanch` | Talks to users in ASI:One and runs the check | AgentChatProtocol 0.3.0, JaanchOfferVerification 1.0.0 | *fill in after first run* |
 | `jaanch-domain-intel` | Domain age (RDAP), mail server (MX), lookalike brands | JaanchDomainIntel 0.1.0 | *fill in after first run* |
 | `jaanch-pattern-check` | Red flags in the text | JaanchPatternCheck 0.1.0 | *fill in after first run* |
+| `jaanch-reputation-intel` | Reddit & community discussion sentiment and scam reports | JaanchReputationIntel 0.1.0 | *fill in after first run* |
 
 ```mermaid
 sequenceDiagram
@@ -148,6 +150,7 @@ sequenceDiagram
     participant J as jaanch
     participant D as jaanch-domain-intel
     participant P as jaanch-pattern-check
+    participant R as jaanch-reputation-intel
     participant M as ML model (inside jaanch)
     U->>J: ChatMessage (the offer)
     J->>J: ASI1 + rules extract company, pay, fee, emails, links
@@ -157,6 +160,9 @@ sequenceDiagram
     and
         J->>P: OfferFacts
         P-->>J: red flags in the text
+    and
+        J->>R: OfferFacts
+        R-->>J: Reddit & community scam reports
     and
         J->>M: predict_offer(text)
         M-->>J: ML text pattern signal

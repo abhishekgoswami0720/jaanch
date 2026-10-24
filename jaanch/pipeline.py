@@ -7,8 +7,9 @@ from typing import Optional
 from . import llm
 from .domain_intel import check_domains
 from .ml_detector import predict_offer
-from .models import DomainReport, OfferFacts, PatternReport, Signal
+from .models import DomainReport, OfferFacts, PatternReport, ReputationReport, Signal
 from .patterns import check_patterns
+from .reputation import check_reputation
 from .scoring import VERDICT_TEXT, ranked, score, verdict
 
 
@@ -28,25 +29,46 @@ def combine(
     domain: DomainReport,
     pattern: PatternReport,
     ml_signal: Optional[Signal] = None,
+    reputation: Optional[ReputationReport] = None,
 ) -> Result:
     all_signals = list(domain.signals + pattern.signals)
     if ml_signal is not None:
         all_signals.append(ml_signal)
+    if reputation is not None:
+        all_signals.extend(reputation.signals)
+
     signals = ranked(all_signals)
     risk = score(signals)
     v = verdict(risk)
+
+    checked = list(domain.checked)
+    if reputation and reputation.checked:
+        checked.extend(f"community:{q}" for q in reputation.checked)
+
+    errors = list(domain.errors)
+    if reputation and reputation.errors:
+        errors.extend(reputation.errors)
+
     return Result(
         facts=facts,
         risk=risk,
         verdict=v,
         verdict_text=VERDICT_TEXT[v],
         signals=signals,
-        checked=domain.checked,
-        errors=domain.errors,
+        checked=checked,
+        errors=errors,
     )
 
 
-async def run_local(text: str, fetch=None, now=None, logger=None, use_ml: bool = True) -> Result:
+async def run_local(
+    text: str,
+    fetch=None,
+    rep_fetch=None,
+    now=None,
+    logger=None,
+    use_ml: bool = True,
+    check_rep: bool = True,
+) -> Result:
     facts, _ = await llm.extract(text, logger=logger)
     kwargs = {}
     if fetch:
@@ -55,8 +77,11 @@ async def run_local(text: str, fetch=None, now=None, logger=None, use_ml: bool =
         kwargs["now"] = now
     domain = await check_domains(facts, **kwargs)
     pattern = check_patterns(facts)
+    reputation = None
+    if check_rep:
+        reputation = await check_reputation(facts, fetch=rep_fetch)
     ml_sig = None
     if use_ml:
         pred = predict_offer(facts.text)
         ml_sig = pred.to_signal()
-    return combine(facts, domain, pattern, ml_signal=ml_sig)
+    return combine(facts, domain, pattern, ml_signal=ml_sig, reputation=reputation)

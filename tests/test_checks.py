@@ -106,6 +106,38 @@ def test_academic_institution_bonus():
     assert "academic_institution" in ids
 
 
+def test_reddit_community_scam_detection():
+    mock_reddit_response = {
+        "data": {
+            "children": [
+                {
+                    "data": {
+                        "subreddit_name_prefixed": "r/developersIndia",
+                        "title": "Beware of Unified Mentor internship scam, asking for fee",
+                        "selftext": "They promised stipend but asking for money in induction session",
+                    }
+                },
+                {
+                    "data": {
+                        "subreddit_name_prefixed": "r/mumbai",
+                        "title": "Unified Mentor fake internship fraud",
+                        "selftext": "Total scam company, please don't pay anything",
+                    }
+                },
+            ]
+        }
+    }
+
+    async def mock_rep_fetch(url):
+        return 200, mock_reddit_response
+
+    text = "Join internship at Unified Mentor Pvt Ltd. Details on https://unifiedmentor.com"
+    r = asyncio.run(run_local(text, fetch=make_fetch(), rep_fetch=mock_rep_fetch, now=NOW))
+    ids = {s.id for s in r.signals}
+    assert "community_scam_reports" in ids
+    assert any("r/developersIndia" in s.evidence for s in r.signals)
+
+
 # ---- resilience ----------------------------------------------------------------
 
 def test_network_down_still_answers():
