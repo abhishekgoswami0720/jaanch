@@ -180,6 +180,8 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     # Repeat scammers are caught by the shared scam memory inside investigate().
     # Keep this user's latest result for the one-click cybercrime docket
     # (ctx is rebuilt for every message, so it can't hold state).
+    if len(_LAST_RESULT) > 500:
+        _LAST_RESULT.clear()
     _LAST_RESULT[sender] = result
 
     narration = await llm.explain(text, result.risk, result.verdict_text, result.signals, logger=ctx.logger)
