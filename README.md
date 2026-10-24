@@ -61,12 +61,12 @@ Every offer starts at **2**. Each warning sign adds points and each good sign ta
 | 🔐 Asks for your **OTP, UPI PIN, card details** or remote access to your phone | **+3** |
 | 👍 Pays you for **"tasks"** like liking videos or writing reviews | **+3** |
 | 📧 Says it's a big company but emails from **Gmail, Yahoo or Outlook** | **+2.5** |
-| ✈️ Moves you to **Telegram or a personal WhatsApp** | **+2** |
+| ✈️ Moves you to **Telegram or a WhatsApp group / chat** (`chat.whatsapp.com`) | **+2** |
 | 🤑 Promises **a lot of money for very little work** | **+2** |
 | ❓ The website **doesn't exist** at all | **+2** |
 | 🤖 **Text matches fraudulent posting dataset** (ML classifier) | **+1.5 to +2** |
-| 🕐 Website less than 6 months old · its email can't receive mail · **no interview** | **+1.5** each |
-| 🪪 Wants **Aadhaar, PAN or bank details** before any interview · **rushes you** · uses **short links** · recruiter on a free email | **+1** each |
+| 🕐 Website less than 6 months old · its email can't receive mail · **direct selection without interview / application** | **+1.5** each |
+| 🪪 Wants **Aadhaar, PAN or bank details** before any interview · **rushes you or pushes same-day induction** · uses **short links** · recruiter on a free email | **+1** each |
 | 👋 Starts with a generic **"Dear candidate"** | **+0.5** |
 | ✅ Email comes from the **company's real website** | **−2** |
 | ✅ Website is **more than 5 years old** | **−1** |
@@ -279,7 +279,7 @@ run.py         starts the agents
 
 ## What's built and what's next
 
-**Built:** three agents with the Chat Protocol and a public verification protocol, an ML recruitment scam classifier trained on EMSCAD, ASI1 extraction and explanation with fallbacks, live website checks, Hinglish red flags, an ASI:One card with "How do I report this?", a local demo, and 68 offline tests.
+**Built:** three agents with the Chat Protocol and a public verification protocol, an ML recruitment scam classifier trained on EMSCAD, ASI1 extraction and explanation with fallbacks, intent routing for general Q&A and scam advice, live website checks, Hinglish red flags, detection for mass WhatsApp induction traps, an ASI:One card with "How do I report this?", a local demo, and offline tests.
 
 **Next:**
 - 📸 Read **screenshots** of offers, since most scams arrive as images on WhatsApp.
