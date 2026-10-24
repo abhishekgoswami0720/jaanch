@@ -32,6 +32,14 @@ Rules: use only the evidence given, do not invent facts, do not change the score
 Start with the verdict line. Then the 2-3 most important reasons in plain words.
 End with one concrete next step. If the user's message was in Hinglish, reply in simple Hinglish."""
 
+ADVISE_PROMPT = """You are Jaanch (जाँच), an expert AI scam-check assistant for Indian students and job seekers.
+The user asked a general question, greeting, or requested advice (NOT an offer to evaluate).
+Give a concise, helpful, and empathetic answer (under 120 words).
+If they ask what scams look like or how to spot them:
+- Highlight common red flags: paying registration/security/training/laptop fees, tasks like YouTube liking, moving to personal Telegram/WhatsApp, lookalike emails (@gmail instead of official company domain).
+- Give a brief example if appropriate.
+Always invite them to paste any suspicious job offer or message so you can run a full live scan with evidence."""
+
 
 def _key() -> Optional[str]:
     return os.getenv("ASI1_API_KEY") or os.getenv("ASI_ONE_API_KEY")
@@ -81,6 +89,16 @@ async def extract(text: str, logger=None) -> tuple[OfferFacts, bool]:
     except Exception as err:  # network, quota, bad JSON: fall back to rules
         if logger:
             logger.warning(f"ASI1 extraction failed, using rules only: {err}")
+
+    # Heuristic fallback: if no key was set or extraction didn't run,
+    # questions or short texts without offer indicators shouldn't be tagged as an offer
+    if not facts.company and not facts.fee and not facts.pay and not facts.emails and not facts.urls and not facts.phones:
+        # Check if text is a question or lacks typical offer keywords
+        q_markers = ("what", "how", "tell me", "why", "who", "when", "can you", "explain", "?")
+        low = text.lower().strip()
+        if any(low.startswith(m) or low.endswith("?") for m in q_markers):
+            is_offer = False
+
     return facts, is_offer
 
 
@@ -120,3 +138,18 @@ async def explain(user_text: str, risk: int, verdict_text: str, signals: list[Si
         if logger:
             logger.warning(f"ASI1 explanation failed, using template: {err}")
     return fallback
+
+
+async def advise(user_text: str, logger=None) -> Optional[str]:
+    """Answers general questions, guidelines, or advice about job scams without scoring."""
+    try:
+        out = await _chat([
+            {"role": "system", "content": ADVISE_PROMPT},
+            {"role": "user", "content": user_text[:1000]},
+        ], max_tokens=250)
+        if out and out.strip():
+            return out.strip()
+    except Exception as err:
+        if logger:
+            logger.warning(f"ASI1 advice failed: {err}")
+    return None

@@ -13,6 +13,7 @@ import asyncio
 import json
 import os
 from pathlib import Path
+import re
 
 from uagents import Agent, Context, Protocol
 from uagents_core.contrib.protocols.chat import (
@@ -77,9 +78,14 @@ async def investigate(ctx: Context, text: str) -> tuple[Result, bool]:
     return combine(facts, domain, pattern, ml_signal=ml_sig), is_offer
 
 
+def _strip_mention(text: str) -> str:
+    # Strips leading @handle if user mentions the agent (e.g. @jaanch-scam-check)
+    return re.sub(r"^\s*@[\w.-]+\s*", "", text).strip()
+
+
 def _looks_like_chitchat(text: str) -> bool:
-    t = text.strip().lower()
-    return len(t) < 25 and "@" not in t and "." not in t
+    cleaned = _strip_mention(text).lower()
+    return len(cleaned) < 25 and "@" not in cleaned and "." not in cleaned
 
 
 def _selection(text: str) -> dict:
@@ -99,11 +105,13 @@ def _selection(text: str) -> dict:
 @chat_proto.on_message(ChatMessage)
 async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     await ctx.send(sender, ChatAcknowledgement(acknowledged_msg_id=msg.msg_id))
-    text = "".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
-    if not text:
+    raw_text = "".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
+    if not raw_text:
         return
 
-    action = _selection(text).get("action")
+    text = _strip_mention(raw_text)
+
+    action = _selection(raw_text).get("action")
     if action == "how_to_report":
         await ctx.send(sender, ChatMessage(content=[TextContent(text=REPORT_STEPS)]))
         return
@@ -113,7 +121,20 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
 
     result, is_offer = await investigate(ctx, text)
     if not is_offer and not result.signals:
-        await ctx.send(sender, ChatMessage(content=[TextContent(text=WELCOME)]))
+        # User asked a question, requested advice, or sent non-offer text
+        advice_text = await llm.advise(text, logger=ctx.logger)
+        if not advice_text:
+            advice_text = (
+                "I am **Jaanch**, an AI assistant that checks job and internship offers for scam signals.\n\n"
+                "**Typical signs of fake internship/job offers:**\n"
+                "• Demands for payment (registration, training fee, laptop deposit, ID card charge)\n"
+                "• Recruiter contacts from free emails (@gmail, @yahoo) while claiming to be from a large company\n"
+                "• Requests to shift conversation to Telegram or personal WhatsApp\n"
+                "• Earning promises for simple tasks (liking YouTube videos, reviewing hotels)\n"
+                "• Immediate offer letters without any interview or verification\n\n"
+                "👉 Paste the exact offer or message you received, and I'll run a full scan with live domain and pattern checks."
+            )
+        await ctx.send(sender, ChatMessage(content=[TextContent(text=advice_text)]))
         return
 
     narration = await llm.explain(text, result.risk, result.verdict_text, result.signals, logger=ctx.logger)

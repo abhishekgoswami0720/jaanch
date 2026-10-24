@@ -1,6 +1,6 @@
 import json
 
-from agents.orchestrator import _looks_like_chitchat, _selection
+from agents.orchestrator import _looks_like_chitchat, _selection, _strip_mention
 from jaanch.cards import card_message, verdict_card
 from jaanch.models import Signal
 
@@ -31,5 +31,12 @@ def test_card_selection_parsing():
 def test_chitchat_detection():
     assert _looks_like_chitchat("hi")
     assert _looks_like_chitchat("what can you do")
+    assert _looks_like_chitchat("@jaanch-scam-check hi")
     assert not _looks_like_chitchat("Is infosys-careers.in real?")
     assert not _looks_like_chitchat("Pay registration fee of ₹1,499 to confirm your internship seat today")
+
+
+def test_strip_mention():
+    assert _strip_mention("@jaanch-scam-check tell me what a fake internship looks like") == "tell me what a fake internship looks like"
+    assert _strip_mention("@jaanch hello") == "hello"
+    assert _strip_mention("Just a normal text") == "Just a normal text"
