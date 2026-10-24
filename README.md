@@ -222,7 +222,7 @@ In ASI:One or Web Chat, click **"How do I report this?"** or **"Copy Cybercrime 
 | `jaanch` (`@jaanch-scam-check`) | Talks to users in ASI:One, runs the check, sells signed reports | AgentChatProtocol 0.3.0, JaanchOfferVerification 1.0.0, AgentPaymentProtocol 0.1.0 | `agent1qvvzp4xwu6c9ct6xrj8swxeet8aep6g36jf5cafegdfzh633zq3n7m4sd5u` |
 | `jaanch-domain-intel` | Domain age (RDAP), mail server (MX), lookalike brands | JaanchDomainIntel 0.1.0 | `agent1qgu0xxylvpa9kv7he3vux9kj5x2l9ffdlad0hsh84nv23vf7avyw68j33th` |
 | `jaanch-pattern-check` | Red flags in the text | JaanchPatternCheck 0.1.0 | `agent1qtwpt528nq7x73s3jxwtpfq9056wltxkwwn8d5393cdd2e4rpyxkjm34s46` |
-| `jaanch-reputation-intel` | Reddit & community discussion sentiment and scam reports | JaanchReputationIntel 0.1.0 | printed by `python run.py reputation` |
+| `jaanch-reputation-intel` | Reddit & community discussion sentiment and scam reports | JaanchReputationIntel 0.1.0 | `agent1q29dnuhez2wd97nsz2vgtjd5dcpkd6pv9rqhmag07zqckdcpwc4jzfnwgq0` |
 
 ```mermaid
 sequenceDiagram
