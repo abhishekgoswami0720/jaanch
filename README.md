@@ -278,20 +278,22 @@ pip install -r requirements.txt
 # 2. Configure environment
 cp .env.example .env        # add ASI1_API_KEY and seed phrases
 
-# 3. Optional: Install OCR engine (for scanned images and screenshots)
-# On Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
-# Set in .env: TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
-# On Ubuntu/Debian: sudo apt-get install tesseract-ocr
+# 3. Quick terminal check or OCR flyer scan
+python scripts/check.py samples/scam_fee_whatsapp.txt     # one check, no agents
+python scripts/scan_image.py samples/screenshot.png       # OCR scan from WhatsApp flyer/image
 
-# 4. Run Web Chat & REST API
+# 4. Autonomous B2B Multi-Agent Placement Screening
+JAANCH_MAILBOX=0 python scripts/placement_oracle_demo.py  # autonomous agent-to-agent screening
+
+# 5. Run Web Chat & REST API
 python run.py web           # Available at http://localhost:8000
 
-# 5. Run Agents on Agentverse
+# 6. Run Agents on Agentverse
 python run.py               # All agents connected to Agentverse
-python run.py jaanch        # Run individual agent
+python run.py jaanch        # Run individual agent (jaanch | domain | pattern | reputation)
 
-# 6. Run Tests
-pytest -v                   # 104 tests, no network needed
+# 7. Run Tests
+pytest -v                   # offline test suite
 ```
 
 </details>
