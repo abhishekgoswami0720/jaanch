@@ -6,7 +6,7 @@ always run so the agent still works if the LLM call fails.
 
 import re
 
-from .brands import BRANDS, FREE_MAIL, PLATFORM_DOMAINS, SHORT_BRANDS
+from .brands import BRANDS, FREE_MAIL, PAYMENT_GATEWAY_DOMAINS, PLATFORM_DOMAINS, SHORT_BRANDS
 from .models import OfferFacts
 
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)")
@@ -21,7 +21,8 @@ MONEY = r"(?:rs\.?|inr|₹)\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:k|lakh|lpa))?"
 FEE_RE = re.compile(
     r"((?:registration|security|training|joining|processing|kit|onboarding|verification|"
     r"refundable|application|certificate|document|id card|laptop)?\s*(?:fee|fees|charge|charges|"
-    r"deposit)[^.\n]{0,40}?" + MONEY + r"|" + MONEY + r"[^.\n]{0,25}?(?:fee|fees|deposit|charges))",
+    r"deposit)[^.\n]{0,40}?" + MONEY + r"|" + MONEY + r"[^.\n]{0,25}?(?:fee|fees|deposit|charges)"
+    r"|(?:https?://)?(?:rzp\.io|pages\.razorpay\.com|imjo\.in|instamojo\.com|cashfree\.com)/[^\s)]+)",
     re.IGNORECASE,
 )
 _NEGATION = re.compile(r"\b(no|zero|not|never|free of|without)\b[^.!?,;\n]{0,15}$", re.IGNORECASE)
@@ -39,6 +40,9 @@ _SECOND_LEVEL = {"co", "gov", "ac", "org", "net", "edu", "nic", "res", "gen", "f
 def registrable_domain(host: str) -> str:
     """Rough eTLD+1: careers.infosys.com -> infosys.com, mail.gla.ac.in -> gla.ac.in."""
     host = host.lower().strip(".").removeprefix("www.")
+    if ":" in host:
+        host = host.split(":")[-1]
+    host = re.sub(r"^[^a-z0-9]+|[^a-z0-9.-]+", "", host)
     parts = host.split(".")
     if len(parts) >= 3 and parts[-2] in _SECOND_LEVEL and len(parts[-1]) == 2:
         return ".".join(parts[-3:])
@@ -74,6 +78,10 @@ def extract_rules(text: str) -> OfferFacts:
         if host.replace(".", "").isdigit():
             continue
         urls.append(full)
+        # Strip any stray prefixes before hostname
+        if ":" in host:
+            host = host.split(":")[-1]
+        host = re.sub(r"^[^a-z0-9]+|[^a-z0-9.-]+", "", host)
         hosts.add(host.removeprefix("www."))
 
     domains = set()
@@ -98,6 +106,21 @@ def extract_rules(text: str) -> OfferFacts:
             continue
         fee = m
         break
+
+    # If no textual fee was found, check if a payment gateway link was provided
+    pg_links = []
+    for u in urls:
+        for pg in PAYMENT_GATEWAY_DOMAINS:
+            if pg in u.lower():
+                pg_links.append(u)
+    for h in hosts:
+        if h in PAYMENT_GATEWAY_DOMAINS and h not in pg_links:
+            pg_links.append(h)
+
+    fee_str = fee.group(0).strip() if fee else None
+    if not fee_str and pg_links:
+        fee_str = f"Payment Gateway Link ({pg_links[0]})"
+
     pay = PAY_RE.search(text)
     brands = find_brands(text)
     upis = sorted({m.group(0).lower() for m in UPI_RE.finditer(text)})
@@ -106,7 +129,7 @@ def extract_rules(text: str) -> OfferFacts:
     return OfferFacts(
         text=text,
         company=display_brand(brands[0]) if brands else None,
-        fee=fee.group(0).strip() if fee else None,
+        fee=fee_str,
         pay=pay.group(0).strip() if pay else None,
         emails=emails,
         domains=sorted(domains),

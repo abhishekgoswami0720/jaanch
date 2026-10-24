@@ -14,7 +14,7 @@ from typing import Awaitable, Callable, Optional
 
 import aiohttp
 
-from .brands import ALL_OFFICIAL, BRANDS, PLATFORM_DOMAINS, RELATED_OFFICIAL, URL_SHORTENERS
+from .brands import ALL_OFFICIAL, BRANDS, PAYMENT_GATEWAY_DOMAINS, PLATFORM_DOMAINS, RELATED_OFFICIAL, URL_SHORTENERS
 from .extract import display_brand, find_brands
 from .models import DomainReport, OfferFacts, Signal
 
@@ -123,6 +123,17 @@ async def check_domain(domain: str, fetch: Fetcher, now: datetime) -> tuple[list
     signals: list[Signal] = []
     errors: list[str] = []
 
+    # If domain is a payment gateway link, flag immediately
+    if domain in PAYMENT_GATEWAY_DOMAINS:
+        signals.append(Signal(
+            id="payment_gateway_domain",
+            label=f"{domain} is a payment checkout gateway, not an official company hiring website",
+            weight=3.5,
+            evidence=domain,
+            source=SOURCE,
+        ))
+        return signals, errors
+
     look = lookalike_of(domain)
     if look:
         brand, official = look
@@ -168,12 +179,10 @@ async def check_domain(domain: str, fetch: Fetcher, now: datetime) -> tuple[list
             answers = [a for a in data.get("Answer", []) if a.get("type") == 15]
             if data.get("Status") == 3:  # NXDOMAIN
                 signals.append(Signal(id="not_registered", label=f"{domain} does not exist",
-                                      weight=2.0, evidence="DNS: NXDOMAIN", source=SOURCE))
+                                      weight=2.0, evidence="NXDOMAIN", source=SOURCE))
             elif not answers:
-                signals.append(Signal(id="no_mx", label=f"{domain} cannot receive email (no mail server)",
-                                      weight=1.5, evidence="DNS: no MX records", source=SOURCE))
-        else:
-            errors.append(f"DNS returned HTTP {status} for {domain}")
+                signals.append(Signal(id="no_mx", label=f"{domain} cannot receive email (no mail exchanger / MX records)",
+                                      weight=1.5, evidence="no MX record in DNS", source=SOURCE))
 
     return signals, errors
 

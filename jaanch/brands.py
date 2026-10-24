@@ -64,10 +64,25 @@ URL_SHORTENERS = {
     "shorturl.at", "rebrand.ly", "tiny.cc", "ow.ly", "s.id",
 }
 
-# Messaging platforms, not company websites: never run domain-age checks on them.
+# Payment gateway and checkout link domains commonly disguised as "registration", "application" or "seat booking" links
+PAYMENT_GATEWAY_DOMAINS = {
+    "rzp.io", "pages.razorpay.com", "razorpay.me", "razorpay.com",
+    "imjo.in", "instamojo.com",
+    "cashfree.com",
+    "p-y.tm", "paytm.me",
+    "cosmofeed.com",
+    "tagmango.com",
+    "buy.stripe.com",
+    "topmate.io",
+}
+
+# Messaging platforms and payment links, not company websites: never run domain-age checks on them.
 PLATFORM_DOMAINS = {
     "t.me", "telegram.me", "wa.me", "whatsapp.com", "chat.whatsapp.com",
     "forms.gle", "docs.google.com", "drive.google.com", "linktr.ee",
+    "rzp.io", "pages.razorpay.com", "razorpay.me", "razorpay.com",
+    "imjo.in", "instamojo.com", "cashfree.com", "p-y.tm", "paytm.me",
+    "cosmofeed.com", "tagmango.com", "buy.stripe.com", "topmate.io",
 }
 
 # Recognized Applicant Tracking Systems (ATS) used by legitimate employers

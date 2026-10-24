@@ -6,7 +6,7 @@ adds them up. Keywords include common Hinglish phrasing used in WhatsApp scams.
 
 import re
 
-from .brands import ALL_OFFICIAL, ATS_DOMAINS, PUBLIC_FORM_DOMAINS, URL_SHORTENERS
+from .brands import ALL_OFFICIAL, ATS_DOMAINS, PAYMENT_GATEWAY_DOMAINS, PUBLIC_FORM_DOMAINS, URL_SHORTENERS
 from .extract import display_brand, find_brands, free_mail_used
 from .models import OfferFacts, PatternReport, Signal
 
@@ -21,6 +21,28 @@ RULES: list[tuple[str, str, float, str]] = [
         r"refundable|application|certificate|id card|laptop)\s*(fee|fees|charge|charges|deposit|amount)"
         r"|pay\s+(rs\.?|inr|₹)\s?\d|(fees?|payment)\s+(jama|bhejo|karna|karni|kare)"
         r"|refundable\s+(amount|deposit)",
+    ),
+    (
+        "payment_gateway_fee",
+        "Directs candidates to a payment gateway checkout link (Razorpay/Instamojo/Cashfree) disguised as registration",
+        4.0,
+        r"(?:https?://)?(?:rzp\.io|pages\.razorpay\.com|razorpay\.me|imjo\.in|instamojo\.com|cashfree\.com|cosmofeed\.com|tagmango\.com|buy\.stripe\.com|p-y\.tm|paytm\.me)/[^\s)]+"
+        r"|\b(?:rzp\.io|imjo\.in|instamojo\.com|cashfree\.com|cosmofeed\.com|tagmango\.com)\b",
+    ),
+    (
+        "instant_offer_trap",
+        "Promises instant offer letter immediately upon registration or seat booking without interview",
+        3.0,
+        r"(offer\s+letter|appointment\s+letter)[^.\n]{0,50}?(issued|given|sent|generated|provided|received)\s+(immediately|directly|instant(ly)?)"
+        r"|immediately[^.\n]{0,50}?(offer\s+letter|appointment\s+letter)"
+        r"|once\s+you\s+register[^.\n]{0,60}?(offer\s+letter|appointment|selection)"
+        r"|instant\s+(offer\s+letter|selection)",
+    ),
+    (
+        "seat_booking_trap",
+        "Pressures candidates to 'lock in seat' or 'secure spot' for job or internship",
+        2.0,
+        r"(lock\s+in|secure|confirm|reserve|book)\s+(your\s+)?(seat|spot|slot|position)|seat\s+(locking|booking|reservation)",
     ),
     (
         "course_upsell_bait",
@@ -125,7 +147,9 @@ RULES: list[tuple[str, str, float, str]] = [
         "Artificial scarcity or fast countdown pressure ('Only X slots left')",
         1.0,
         r"only\s+\d+\s*(slots?|seats?|vacanc\w*)\s*(left|remaining)|limited\s+(slots?|seats?)"
-        r"|offer\s+expires\s+in\s+\d+\s*(hours?|hrs?|minutes?|days?)|batch\s+filling\s+fast",
+        r"|offer\s+expires\s+in\s+\d+\s*(hours?|hrs?|minutes?|days?)|batch\s+filling\s+fast"
+        r"|last\s+\d+\s*(hours?|hrs?|minutes?|mins?)\s+remaining|final\s+call|last\s+day\s+to\s+join"
+        r"|absolute\s+last\s+chance|portal\s+shuts?\s+down|secure\s+your\s+spot|no\s+extensions?",
     ),
     (
         "mca_claims",
@@ -179,10 +203,28 @@ def check_patterns(facts: OfferFacts) -> PatternReport:
             signals.append(Signal(id=rule_id, label=label, weight=weight, evidence=_snippet(text, m), source=SOURCE))
 
     # A fee the extractor found but the keyword rule missed (e.g. "send ₹1,999 to confirm").
-    if facts.fee and not any(s.id == "fee_demand" for s in signals):
+    if facts.fee and not any(s.id in ("fee_demand", "payment_gateway_fee") for s in signals):
         signals.append(
             Signal(id="fee_demand", label="Asks you to pay a fee or deposit to get the job",
                    weight=4.0, evidence=facts.fee, source=SOURCE)
+        )
+
+    # Check for payment gateway domains or links
+    pg_found = sorted(set(facts.domains) & PAYMENT_GATEWAY_DOMAINS)
+    if not pg_found:
+        for u in facts.urls:
+            for pg in PAYMENT_GATEWAY_DOMAINS:
+                if pg in u.lower():
+                    pg_found.append(pg)
+    if pg_found and not any(s.id == "payment_gateway_fee" for s in signals):
+        signals.append(
+            Signal(
+                id="payment_gateway_fee",
+                label="Directs candidates to a payment gateway checkout link (Razorpay/Instamojo/Cashfree) disguised as registration",
+                weight=4.0,
+                evidence=", ".join(sorted(set(pg_found))),
+                source=SOURCE,
+            )
         )
 
     shorteners = sorted(set(facts.domains) & URL_SHORTENERS)

@@ -10,6 +10,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 import threading
 from typing import Any, Optional
 
@@ -187,6 +188,21 @@ def predict_offer(
         # predict_proba returns [prob_legit, prob_scam]
         probs = pipeline.predict_proba([clean_text])[0]
         scam_prob = float(probs[1])
+
+        # Modern scam pattern calibration for WhatsApp/social recruitment messages
+        # (which were underrepresented in historical 2012-2014 EMSCAD job board datasets)
+        modern_scam_indicators = [
+            r"(?:https?://)?(?:rzp\.io|pages\.razorpay\.com|imjo\.in|instamojo\.com|cashfree\.com|cosmofeed\.com)/[^\s)]+|\b(?:rzp\.io|imjo\.in)\b",
+            r"(lock\s+in|secure)\s+(your\s+)?(seat|spot)|seat\s+(locking|booking)",
+            r"(offer\s+letter|appointment)[^.\n]{0,50}?(issued|given)\s+immediately",
+            r"t\.me/|chat\.whatsapp\.com/|wa\.me/",
+            r"prepaid\s+tasks?|youtube\s+like|daily\s+task\s+earn",
+            r"refundable\s+(security\s+)?(deposit|fee)",
+        ]
+        matched_indicators = sum(1 for pat in modern_scam_indicators if re.search(pat, clean_text, re.IGNORECASE))
+        if matched_indicators > 0:
+            scam_prob = min(0.98, scam_prob + (0.35 * matched_indicators))
+
         predicted_class = "scam" if scam_prob >= threshold else "legitimate"
 
         return MLPredictionResult(

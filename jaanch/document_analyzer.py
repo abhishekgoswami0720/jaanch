@@ -20,7 +20,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-from .brands import ALL_OFFICIAL, BRANDS, FREE_MAIL, PLATFORM_DOMAINS
+from .brands import ALL_OFFICIAL, BRANDS, FREE_MAIL, PAYMENT_GATEWAY_DOMAINS, PLATFORM_DOMAINS
 from .document_parser import ExtractedDocument
 from .document_security import wrap_untrusted_text
 from .domain_intel import check_domain, lookalike_of
@@ -245,9 +245,19 @@ async def analyze_offer_document(
                     points=10,
                 ))
 
-    # Check lookalike domains
+    # Check lookalike domains and payment gateway links
     lookalike_found = False
     for dom in facts.domains:
+        if dom in PAYMENT_GATEWAY_DOMAINS:
+            page_loc = find_text_page(dom, pages)
+            risk_indicators.append(RiskIndicator(
+                indicator="Payment Gateway Link Disguised as Application / Registration",
+                severity="High",
+                evidence=f"{dom} checkout link found in offer",
+                location=page_loc,
+                explanation=f"The document directs applicants to a payment gateway checkout link ({dom}) to collect upfront fees.",
+                points=35,
+            ))
         look = lookalike_of(dom)
         if look:
             brand, official = look
@@ -371,6 +381,33 @@ async def analyze_offer_document(
                 location=page_loc,
                 explanation="Exaggerated pay promises are used as bait for student job seekers.",
                 points=15,
+            ))
+        elif p_sig.id == "instant_offer_trap":
+            risk_indicators.append(RiskIndicator(
+                indicator="Instant Offer Letter Issued Without Evaluation",
+                severity="High",
+                evidence=p_sig.evidence or "Offer letter issued immediately upon registration",
+                location=page_loc,
+                explanation="Legitimate recruitment involves screening and interviews. Offering immediate appointment on fee payment is a classic recruitment scam trap.",
+                points=25,
+            ))
+        elif p_sig.id == "seat_booking_trap":
+            risk_indicators.append(RiskIndicator(
+                indicator="Artificial Seat Booking / Lock-In Demand",
+                severity="Medium",
+                evidence=p_sig.evidence or "Lock in your seat / secure your spot",
+                location=page_loc,
+                explanation="Genuine internships hire based on merit; they do not ask candidates to reserve or lock seats.",
+                points=15,
+            ))
+        elif p_sig.id == "scarcity":
+            risk_indicators.append(RiskIndicator(
+                indicator="Artificial Scarcity / Fast Countdown Pressure",
+                severity="Low",
+                evidence=p_sig.evidence or "Final call / last chance countdown",
+                location=page_loc,
+                explanation="Scammers use extreme countdown pressure to force impulsive payments without verification.",
+                points=10,
             ))
         elif p_sig.id == "generic_greeting" and not extracted_fields["candidate_name"]:
             risk_indicators.append(RiskIndicator(

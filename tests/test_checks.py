@@ -317,3 +317,26 @@ def test_part_time_earn_daily_whatsapp():
     r = run("Part time job! Earn ₹2000-5000 daily from home, just need a phone. Contact HR on WhatsApp 98XXXXXXXX")
     ids = {s.id for s in r.signals}
     assert {"easy_money", "off_platform"} <= ids and r.verdict != "low_risk"
+
+
+def test_payment_gateway_instant_offer_screenshot_scam():
+    text = (
+        "rzp.io\n"
+        "https://rzp.io/rzp/ums2026\n\n"
+        "FINAL CALL - Today is the Last Day to Join!\n"
+        "Our Internship Starts Today, 1 October!\n"
+        "This is your absolute last chance to join our internship program. Registration closes today, and no extensions will be granted.\n"
+        "What happens next? Once you register, your official Offer Letter will be issued immediately.\n"
+        "LAST 1 HOUR REMAINING!\n"
+        "The registration portal shuts down today at 11:59 AM sharp. Secure your spot before access closes!\n"
+        "Register now to lock in your seat:\n"
+        "https://rzp.io/rzp/ums2026\n"
+        "Don't miss out on this opportunity join us today!"
+    )
+    r = run(text)
+    assert r.risk >= 8
+    assert r.verdict == "high_risk"
+    ids = {s.id for s in r.signals}
+    assert "payment_gateway_fee" in ids
+    assert "instant_offer_trap" in ids
+    assert "seat_booking_trap" in ids
