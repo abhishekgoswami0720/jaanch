@@ -1,7 +1,8 @@
 """Start the Jaanch agents.
 
-    python run.py                 # all three agents in one process (Bureau)
-    python run.py jaanch          # one agent per terminal: jaanch | domain | pattern
+    python run.py                 # all four agents in one process (Bureau)
+    python run.py jaanch          # one agent per terminal: jaanch | domain | pattern | reputation
+    python run.py web             # start the interactive Web Chat UI & Document Upload API
     JAANCH_MAILBOX=0 python run.py    # fully local, for testing
 
 With mailboxes on, each agent prints an Agent Inspector link: open it and
@@ -55,22 +56,33 @@ def run_single(which: str, port: int) -> None:
         agent = build_orchestrator(MAILBOX, _address("JAANCH_DOMAIN_SEED", DOMAIN_DEV_SEED),
                                    _address("JAANCH_PATTERN_SEED", PATTERN_DEV_SEED),
                                    _address("JAANCH_REPUTATION_SEED", REPUTATION_DEV_SEED), port=port)
+        print(f"{agent.name}: {agent.address}")
+        agent.run()
     elif which == "domain":
         agent = build_domain_agent(MAILBOX, port=port)
+        print(f"{agent.name}: {agent.address}")
+        agent.run()
     elif which == "pattern":
         agent = build_pattern_agent(MAILBOX, port=port)
+        print(f"{agent.name}: {agent.address}")
+        agent.run()
     elif which == "reputation":
         agent = build_reputation_agent(MAILBOX, port=port)
+        print(f"{agent.name}: {agent.address}")
+        agent.run()
+    elif which == "web":
+        import uvicorn
+        web_port = int(os.getenv("JAANCH_WEB_PORT", str(port)))
+        print(f"Starting Jaanch Web Chat Interface & Document Upload API on http://127.0.0.1:{web_port}")
+        uvicorn.run("jaanch.api:app", host="0.0.0.0", port=web_port, reload=False)
     else:
-        sys.exit("usage: python run.py [jaanch|domain|pattern|reputation]")
-    print(f"{agent.name}: {agent.address}")
-    agent.run()
+        sys.exit("usage: python run.py [jaanch|domain|pattern|reputation|web]")
 
 
 if __name__ == "__main__":
     port = int(os.getenv("JAANCH_PORT", "8000"))
     if len(sys.argv) > 1:
-        offsets = {"jaanch": 0, "domain": 1, "pattern": 2}
+        offsets = {"jaanch": 0, "domain": 1, "pattern": 2, "reputation": 3, "web": 0}
         run_single(sys.argv[1], port + offsets.get(sys.argv[1], 0))
     else:
         build_bureau(port=port).run()

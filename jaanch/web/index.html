@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jaanch — AI Offer Letter & Job Scam Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #131b2e;
+      --panel-bg: #1a233a;
+      --border: #263352;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --accent-indigo: #6366f1;
+      --risk-high: #ef4444;
+      --risk-med: #f59e0b;
+      --risk-low: #10b981;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at 50% 0%, #172554 0%, var(--bg) 75%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+    .brand-title { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 0.75rem; color: var(--text-muted); }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    main {
+      flex: 1;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 8rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .chat-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 88%;
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .msg.user { align-self: flex-end; }
+    .msg.agent { align-self: flex-start; max-width: 100%; }
+
+    .msg-bubble {
+      padding: 0.85rem 1.15rem;
+      border-radius: var(--radius-md);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    .msg.user .msg-bubble {
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+    .msg.agent .msg-bubble {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 3px;
+    }
+
+    /* Attached file badge inside user message */
+    .file-attachment-bubble {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.25);
+      padding: 6px 12px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    /* Analysis Report Card */
+    .analysis-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-top: 0.75rem;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+    .badge-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .badge.fraud { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .badge.suspicious { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge.genuine { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge.neutral { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+    /* Score meter */
+    .meter-container {
+      margin: 1rem 0;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 1rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+    .meter-bar-bg {
+      height: 10px;
+      background: #334155;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .meter-bar-fill {
+      height: 100%;
+      width: 0%;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .meter-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin: 1.25rem 0 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 8px 16px;
+      margin-bottom: 0.5rem;
+    }
+    .info-item {
+      font-size: 0.85rem;
+    }
+    .info-label { color: var(--text-muted); font-size: 0.75rem; }
+    .info-val { font-weight: 600; color: #f8fafc; }
+
+    .indicator-box {
+      background: rgba(239, 68, 68, 0.08);
+      border-left: 3px solid var(--risk-high);
+      padding: 0.75rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .indicator-box.med {
+      background: rgba(245, 158, 11, 0.08);
+      border-left-color: var(--risk-med);
+    }
+    .indicator-header { font-weight: 600; display: flex; justify-content: space-between; }
+    .indicator-quote {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .action-btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .card-btn {
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--panel-bg);
+      color: var(--text-main);
+      transition: all 0.2s;
+    }
+    .card-btn:hover { background: #263352; color: #fff; }
+    .card-btn.primary { background: linear-gradient(135deg, #ef4444, #dc2626); border-color: transparent; }
+    .card-btn.primary:hover { opacity: 0.9; }
+
+    /* Sticky Footer Message Composer */
+    .composer-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(11, 15, 25, 0.95);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      padding: 0.75rem 1rem 1rem 1rem;
+      z-index: 40;
+    }
+    .composer-box {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Selected file staging bar */
+    .staged-file-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      font-size: 0.82rem;
+    }
+    .staged-file-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .staged-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      object-fit: cover;
+      display: none;
+    }
+    .remove-file-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    .remove-file-btn:hover { color: #f87171; }
+
+    /* Upload progress */
+    .upload-progress-bar {
+      display: none;
+      height: 3px;
+      background: var(--accent-blue);
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+
+    .composer-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 6px 12px;
+      transition: border-color 0.2s;
+    }
+    .composer-input-row:focus-within { border-color: var(--accent-blue); }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      color: var(--accent-blue);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      transition: all 0.2s;
+    }
+    .icon-btn:hover { background: #263352; color: #fff; transform: scale(1.05); }
+
+    .chat-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      font-family: inherit;
+      padding: 6px 4px;
+    }
+
+    .send-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    }
+    .send-btn:hover { transform: scale(1.05); }
+
+    /* Drag & drop overlay */
+    .drag-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.9);
+      border: 3px dashed var(--accent-blue);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .drag-overlay.active { display: flex; }
+
+    /* Modal for Docket / Report Steps */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 110;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      max-width: 650px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .close-modal { background: none; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer; }
+    .docket-pre {
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="logo-badge">ज</div>
+      <div>
+        <div class="brand-title">Jaanch (जाँच)</div>
+        <div class="brand-sub">Offer Letter & Job Scam Intelligence Engine</div>
+      </div>
+    </div>
+    <div class="status-pill">
+      <div class="pulse-dot"></div>
+      Agent Active
+    </div>
+  </header>
+
+  <main id="chatStream" class="chat-stream">
+    <div class="msg agent">
+      <div class="msg-bubble">
+        👋 Hi, I'm <strong>Jaanch</strong>. Attach your offer letter document (PDF, Word, or Image) or paste a recruitment message to analyze it for fraud indicators, unverified recruiters, and fee traps.
+        <br><br>
+        <span style="color: var(--text-muted); font-size: 0.82rem;">
+          Supported formats: <strong>PDF, DOCX, JPG, PNG, WEBP, TXT</strong> (up to 15 MB).
+        </span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Drag & Drop overlay -->
+  <div id="dragOverlay" class="drag-overlay">
+    <h2>Drop your Offer Letter here</h2>
+    <p style="color: var(--text-muted); margin-top: 6px;">PDF, DOCX, JPG, PNG up to 15 MB</p>
+  </div>
+
+  <!-- Sticky Message Composer -->
+  <div class="composer-container">
+    <div class="composer-box">
+      <!-- Staged attachment preview bar -->
+      <div id="stagedFileBar" class="staged-file-bar">
+        <div class="staged-file-info">
+          <img id="stagedThumb" class="staged-thumb" alt="Preview">
+          <span id="stagedDocIcon">📄</span>
+          <span id="stagedFileName" style="font-weight: 600;"></span>
+          <span id="stagedFileSize" style="color: var(--text-muted); font-size: 0.75rem;"></span>
+        </div>
+        <button id="removeFileBtn" class="remove-file-btn" title="Remove attachment">&times;</button>
+      </div>
+
+      <div id="uploadProgressBar" class="upload-progress-bar"></div>
+
+      <div class="composer-input-row">
+        <!-- Hidden file input -->
+        <input type="file" id="fileInput" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp,.txt" style="display: none;">
+        
+        <!-- Attachment / Plus button -->
+        <button id="attachBtn" class="icon-btn" title="Upload Offer Letter (PDF, Image, Word)">
+          📎
+        </button>
+
+        <input 
+          type="text" 
+          id="chatInput" 
+          class="chat-input" 
+          placeholder="Paste message or ask follow-up ('Why is this suspicious?')" 
+          autocomplete="off"
+        >
+
+        <button id="sendBtn" class="send-btn" title="Send">
+          ➔
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Docket & Instructions -->
+  <div id="docketModal" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Incident Details</h3>
+        <button id="closeModalBtn" class="close-modal">&times;</button>
+      </div>
+      <pre id="modalBody" class="docket-pre"></pre>
+      <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 8px;">
+        <button id="copyDocketBtn" class="card-btn primary">Copy to Clipboard</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chatStream = document.getElementById('chatStream');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const attachBtn = document.getElementById('attachBtn');
+    const fileInput = document.getElementById('fileInput');
+    const stagedFileBar = document.getElementById('stagedFileBar');
+    const stagedFileName = document.getElementById('stagedFileName');
+    const stagedFileSize = document.getElementById('stagedFileSize');
+    const stagedThumb = document.getElementById('stagedThumb');
+    const stagedDocIcon = document.getElementById('stagedDocIcon');
+    const removeFileBtn = document.getElementById('removeFileBtn');
+    const dragOverlay = document.getElementById('dragOverlay');
+    const docketModal = document.getElementById('docketModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const copyDocketBtn = document.getElementById('copyDocketBtn');
+
+    let stagedFile = null;
+    let latestDocId = null;
+    const conversationId = 'conv_' + Math.random().toString(36).substring(2, 10);
+
+    // File selection
+    attachBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    function handleFileSelect(file) {
+      if (file.size > 15 * 1024 * 1024) {
+        alert('File size exceeds 15 MB limit. Please select a smaller file.');
+        return;
+      }
+      stagedFile = file;
+      stagedFileName.textContent = file.name;
+      stagedFileSize.textContent = `(${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+
+      // Image preview
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          stagedThumb.src = e.target.result;
+          stagedThumb.style.display = 'block';
+          stagedDocIcon.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        stagedThumb.style.display = 'none';
+        stagedDocIcon.style.display = 'inline-block';
+      }
+      stagedFileBar.style.display = 'flex';
+    }
+
+    removeFileBtn.addEventListener('click', () => {
+      stagedFile = null;
+      fileInput.value = '';
+      stagedFileBar.style.display = 'none';
+    });
+
+    // Drag and drop handlers
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dragOverlay.classList.add('active');
+    });
+    dragOverlay.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dragOverlay.classList.remove('active');
+    });
+    dragOverlay.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragOverlay.classList.remove('active');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    // Sending messages
+    sendBtn.addEventListener('click', handleSubmit);
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSubmit();
+    });
+
+    async function handleSubmit() {
+      const text = chatInput.value.trim();
+      if (!text && !stagedFile) return;
+
+      // Render user message bubble
+      const userMsgDiv = document.createElement('div');
+      userMsgDiv.className = 'msg user';
+
+      let userBubbleHtml = '';
+      if (stagedFile) {
+        userBubbleHtml += `<div class="file-attachment-bubble">📎 ${stagedFile.name}</div>`;
+      }
+      if (text) {
+        userBubbleHtml += `<div>${escapeHtml(text)}</div>`;
+      }
+      userMsgDiv.innerHTML = `<div class="msg-bubble">${userBubbleHtml}</div>`;
+      chatStream.appendChild(userMsgDiv);
+
+      chatInput.value = '';
+      const fileToSend = stagedFile;
+      stagedFile = null;
+      fileInput.value = '';
+      stagedFileBar.style.display = 'none';
+      scrollToBottom();
+
+      // If a document was attached, process via upload endpoint
+      if (fileToSend) {
+        renderAgentLoading("I've received your offer letter. Extracting contents, examining fraud indicators, and verifying employer credentials...");
+        await uploadAndAnalyze(fileToSend, text);
+      } else {
+        renderAgentLoading("Analyzing message...");
+        await sendTextMessage(text);
+      }
+    }
+
+    async function uploadAndAnalyze(file, text) {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('conversation_id', conversationId);
+
+      try {
+        const resp = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        removeAgentLoading();
+
+        if (!resp.ok) {
+          const errData = await resp.json().catch(() => ({}));
+          renderAgentText(`⚠️ Error processing document: ${errData.detail || resp.statusText}`);
+          return;
+        }
+
+        const data = await resp.json();
+        latestDocId = data.doc_id;
+        renderDocumentCard(data);
+      } catch (err) {
+        removeAgentLoading();
+        renderAgentText(`⚠️ Network or server error: ${err.message}`);
+      }
+    }
+
+    async function sendTextMessage(message) {
+      try {
+        const resp = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message,
+            conversation_id: conversationId,
+            doc_id: latestDocId,
+          }),
+        });
+
+        removeAgentLoading();
+        if (!resp.ok) {
+          renderAgentText(`⚠️ Server returned error: ${resp.statusText}`);
+          return;
+        }
+
+        const data = await resp.json();
+        if (data.type === 'docket') {
+          showDocketModal('Cybercrime Evidence Docket', data.response);
+        } else {
+          renderAgentText(data.response);
+        }
+      } catch (err) {
+        removeAgentLoading();
+        renderAgentText(`⚠️ Error communicating with agent: ${err.message}`);
+      }
+    }
+
+    function renderDocumentCard(data) {
+      const agentMsg = document.createElement('div');
+      agentMsg.className = 'msg agent';
+
+      const fields = data.extracted_fields || {};
+      const indicators = data.risk_indicators || [];
+      const positives = data.positive_signals || [];
+      const verif = data.company_verification || {};
+
+      const risk = data.risk_score;
+      let badgeClass = 'suspicious';
+      let meterColor = 'var(--risk-med)';
+      if (risk >= 75) { badgeClass = 'fraud'; meterColor = 'var(--risk-high)'; }
+      else if (risk < 25) { badgeClass = 'genuine'; meterColor = 'var(--risk-low)'; }
+
+      let indHtml = '';
+      indicators.forEach(ind => {
+        const isMed = ind.severity === 'Medium' || ind.severity === 'Low';
+        indHtml += `
+          <div class="indicator-box ${isMed ? 'med' : ''}">
+            <div class="indicator-header">
+              <span>▲ ${ind.location ? `[${ind.location}]` : ''} ${escapeHtml(ind.indicator)}</span>
+              <span style="font-size: 0.75rem; text-transform: uppercase;">${ind.severity}</span>
+            </div>
+            <div style="margin-top: 3px;">${escapeHtml(ind.explanation)}</div>
+            ${ind.evidence ? `<div class="indicator-quote">Quote: "${escapeHtml(ind.evidence)}"</div>` : ''}
+          </div>
+        `;
+      });
+      if (!indHtml) {
+        indHtml = `<p style="font-size: 0.85rem; color: var(--text-muted);">No concrete fraud indicators identified in document text.</p>`;
+      }
+
+      let posHtml = '';
+      positives.forEach(p => {
+        posHtml += `<div style="font-size: 0.85rem; margin-bottom: 4px;">✓ <strong>${escapeHtml(p.signal)}</strong>: ${escapeHtml(p.explanation || p.evidence)}</div>`;
+      });
+
+      let recHtml = '';
+      (data.recommended_actions || []).forEach(r => {
+        recHtml += `<li style="font-size: 0.85rem; margin-bottom: 3px;">${escapeHtml(r)}</li>`;
+      });
+
+      const cardHtml = `
+        <div class="msg-bubble" style="padding: 0;">
+          <div class="analysis-card">
+            <div class="card-header">
+              <div class="badge-group">
+                <span class="badge ${badgeClass}">${data.classification}</span>
+                <span class="badge neutral">Risk ${data.risk_score}/100</span>
+                <span class="badge neutral">Confidence: ${data.confidence}</span>
+              </div>
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">${escapeHtml(data.filename)}</span>
+            </div>
+
+            <!-- Risk meter -->
+            <div class="meter-container">
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600;">
+                <span>Fraud Probability Index</span>
+                <span>${data.risk_score}/100</span>
+              </div>
+              <div class="meter-bar-bg">
+                <div class="meter-bar-fill" style="width: ${data.risk_score}%; background: ${meterColor};"></div>
+              </div>
+              <div class="meter-labels">
+                <span>0 (Genuine)</span>
+                <span>50 (Suspicious)</span>
+                <span>100 (Severe Fraud)</span>
+              </div>
+            </div>
+
+            <p style="font-size: 0.92rem; font-weight: 600; margin: 0.75rem 0;">${escapeHtml(data.summary)}</p>
+
+            <div class="section-title">Extracted Document Information</div>
+            <div class="info-grid">
+              <div class="info-item"><div class="info-label">Company</div><div class="info-val">${escapeHtml(fields.company_name || 'Not found')}</div></div>
+              <div class="info-item"><div class="info-label">Candidate</div><div class="info-val">${escapeHtml(fields.candidate_name || 'Generic / Not named')}</div></div>
+              <div class="info-item"><div class="info-label">Role</div><div class="info-val">${escapeHtml(fields.role || 'Not specified')}</div></div>
+              <div class="info-item"><div class="info-label">Stipend / Salary</div><div class="info-val">${escapeHtml(fields.stipend || 'Unspecified')}</div></div>
+              <div class="info-item"><div class="info-label">Joining Date</div><div class="info-val">${escapeHtml(fields.joining_date || 'Unspecified')}</div></div>
+              <div class="info-item"><div class="info-label">Recruiter Contact</div><div class="info-val">${escapeHtml(fields.recruiter_email || fields.contact_numbers?.[0] || 'Unverified')}</div></div>
+              ${fields.requested_payment ? `<div class="info-item" style="grid-column: 1/-1;"><div class="info-label" style="color: #f87171;">Fee / Deposit Demanded</div><div class="info-val" style="color: #f87171;">${escapeHtml(fields.requested_payment)}</div></div>` : ''}
+            </div>
+
+            <div class="section-title">Suspicious Indicators & Warnings</div>
+            ${indHtml}
+
+            ${posHtml ? `<div class="section-title">Verified Positive Signals</div>${posHtml}` : ''}
+
+            <div class="section-title">Recommended Next Steps</div>
+            <ul style="padding-left: 1.25rem;">${recHtml}</ul>
+
+            <div class="action-btn-row">
+              <button class="card-btn primary" onclick="getComplaintDocket('${data.doc_id}')">Copy Cybercrime Docket</button>
+              <button class="card-btn" onclick="askFollowUp('Why is this offer suspicious?')">Why is this suspicious?</button>
+              <button class="card-btn" onclick="askFollowUp('Check the company domain')">Check domain</button>
+              <button class="card-btn" onclick="askFollowUp('What should I verify before joining?')">Next steps</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      agentMsg.innerHTML = cardHtml;
+      chatStream.appendChild(agentMsg);
+      scrollToBottom();
+    }
+
+    function renderAgentText(text) {
+      const agentMsg = document.createElement('div');
+      agentMsg.className = 'msg agent';
+      agentMsg.innerHTML = `<div class="msg-bubble">${formatMarkdown(text)}</div>`;
+      chatStream.appendChild(agentMsg);
+      scrollToBottom();
+    }
+
+    let loadingBubble = null;
+    function renderAgentLoading(msg) {
+      loadingBubble = document.createElement('div');
+      loadingBubble.className = 'msg agent';
+      loadingBubble.innerHTML = `<div class="msg-bubble" style="color: var(--text-muted); font-style: italic;">⏳ ${escapeHtml(msg)}</div>`;
+      chatStream.appendChild(loadingBubble);
+      scrollToBottom();
+    }
+    function removeAgentLoading() {
+      if (loadingBubble && loadingBubble.parentNode) {
+        loadingBubble.parentNode.removeChild(loadingBubble);
+      }
+    }
+
+    function scrollToBottom() {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[tag] || tag));
+    }
+
+    function formatMarkdown(str) {
+      if (!str) return '';
+      return escapeHtml(str)
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px;">$1</code>')
+        .replace(/\n/g, '<br>');
+    }
+
+    window.askFollowUp = function(q) {
+      chatInput.value = q;
+      handleSubmit();
+    };
+
+    window.getComplaintDocket = async function(docId) {
+      try {
+        const resp = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'get_docket', doc_id: docId, conversation_id: conversationId })
+        });
+        const d = await resp.json();
+        showDocketModal('Cybercrime Complaint Docket', d.response);
+      } catch (err) {
+        alert('Could not generate docket: ' + err.message);
+      }
+    };
+
+    function showDocketModal(title, text) {
+      modalTitle.textContent = title;
+      modalBody.textContent = text;
+      docketModal.style.display = 'flex';
+    }
+    closeModalBtn.addEventListener('click', () => { docketModal.style.display = 'none'; });
+    copyDocketBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(modalBody.textContent);
+      copyDocketBtn.textContent = 'Copied! ✓';
+      setTimeout(() => { copyDocketBtn.textContent = 'Copy to Clipboard'; }, 2000);
+    });
+  </script>
+</body>
+</html>

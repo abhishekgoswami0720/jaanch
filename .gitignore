@@ -19,7 +19,16 @@ data/labels/*
 data/reports/*
 !data/reports/.gitkeep
 !data/reports/*.json
-!data/README.md
+data/README.md
+
+# Uploaded documents and runtime databases
+data/uploads/*
+!data/uploads/.gitkeep
+Data/uploads/*
+!Data/uploads/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
 
 models/*
 !models/.gitkeep

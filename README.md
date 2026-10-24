@@ -5,9 +5,9 @@
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg"><source media="(prefers-color-scheme: light)" srcset="assets/banner-light.svg"><img alt="Jaanch: check a job offer before it checks your wallet" src="assets/banner-dark.svg" width="100%"></picture>
 </p>
 
-**Got a job or internship offer that feels too good to be true?** Paste it into Jaanch. In a few seconds you get a **risk score from 1 to 10**, the reasons behind it, and what to do next.
+**Got a job or internship offer that feels too good to be true?** Paste the text or upload the offer document (PDF, Word, or screenshot) into Jaanch. In a few seconds you get an **explainable risk score**, the verified evidence behind it, and what to do next.
 
-*Jaanch* (जाँच) means "check" in Hindi. It runs as three small AI agents on Fetch.ai's Agentverse, and you talk to it in **ASI:One**, like any chat app.
+*Jaanch* (जाँच) means "check" in Hindi. It runs as multi-agent recruitment security system on Fetch.ai's Agentverse, accessible via **ASI:One** and the integrated **Jaanch Web Chat**.
 
 ---
 
@@ -27,87 +27,129 @@ Half the people in that survey said that knowing who the recruiter really is wou
 
 ---
 
-## How it works
+## 📄 Offer Letter Fraud Detection Agent
+
+Users can upload an offer letter directly in the chat, and the agent analyzes the document to determine whether it appears legitimate, suspicious, or fraudulent.
+
+```mermaid
+flowchart TD
+    A["📎 User Uploads Offer Letter<br/>(PDF, DOCX, Image, TXT up to 15 MB)"] --> B["🔒 Security & Integrity<br/>Magic byte checks · Anti-Prompt Injection<br/>UUID-isolated private storage"]
+    B --> C["📑 Multi-Format Parser & OCR<br/>Page-by-page text extraction<br/>Tesseract OCR fallback for scans"]
+    C --> D["🔎 Fact Extraction<br/>Company, stipend, dates, recruiter,<br/>fees, UPI, MCA CIN, domains"]
+    D --> E["🧠 Hybrid Fraud Analysis<br/>• Upfront fee / deposit detection<br/>• Lookalike & webmail checks<br/>• MCA CIN & RDAP domain age<br/>• DNS MX mail verification<br/>• EMSCAD ML classification<br/>• Shared scam memory"]
+    E --> F["📊 Explainable 0–100 Risk Score<br/>• LIKELY GENUINE (0–29)<br/>• SUSPICIOUS (30–59)<br/>• LIKELY FRAUD (60–100)<br/>• INSUFFICIENT EVIDENCE"]
+    F --> G["💬 Interactive Chat Cards & Follow-Up Q&A<br/>'Why is this suspicious?' · 'Check domain'<br/>1-Click Cybercrime Complaint Docket"]
+```
+
+### Core Document Analysis Capabilities
+
+1. **Multi-Format Ingestion (up to 15 MB):**
+   - **PDF:** Page-by-page text extraction with encrypted file detection.
+   - **DOCX:** Paragraph and tabular offer term extraction.
+   - **Images (PNG, JPG, JPEG, WEBP):** Pillow metadata parsing with OCR fallback for screenshots.
+   - **Plain Text (TXT):** Safe multi-encoding read with text normalization.
+
+2. **Zero-Trust Security & Integrity:**
+   - Strict MIME and magic byte signature verification (`%PDF-`, `PK\x03\x04`, `\xFF\xD8\xFF`, etc.).
+   - Path-traversal sanitization and unique UUID file isolation in `data/uploads/`.
+   - Anti-prompt injection encapsulation (`wrap_untrusted_text`) preventing embedded prompt overrides.
+
+3. **Hybrid Verification Engine:**
+   - **Fee & Payment Traps:** Detects refundable fees, kit costs, training deposits, and personal UPI handles (`@okaxis`, `@paytm`, `@ybl`).
+   - **Company & Recruiter Verification:** Validates 21-character MCA CIN corporate registration format, cross-checks official company domains, and detects freemail spoofing (e.g. `wipro.careers@gmail.com`).
+   - **Domain & Email Infrastructure:** Authoritative IANA/RDAP domain creation age lookups and DNS MX mail routing checks.
+   - **EMSCAD Machine Learning:** Classifies textual similarity against 17,880 historical job listings.
+   - **Cross-User Shared Memory:** HMAC-fingerprinted scammer indicators (phone, email, UPI, links) flagged across all student inquiries.
+
+4. **Conversational Follow-Up Q&A:**
+   Students can ask follow-up questions directly in the chat without re-scanning:
+   - *"Why is this offer suspicious?"*
+   - *"Which exact details indicate fraud?"*
+   - *"Check the company domain."*
+   - *"Is the stipend realistic?"*
+   - *"What should I verify before joining?"*
+   - *"Summarize the findings."*
+
+5. **1-Click Cybercrime Complaint Docket:**
+   Generates a structured, evidence-backed cybercrime docket ready for filing at **1930** or **cybercrime.gov.in**.
+
+---
+
+## How it works (Pasted Text Workflow)
 
 ```mermaid
 flowchart LR
     A["📩 You paste the offer<br/>into ASI:One"] --> B["🧠 Jaanch reads it<br/>company, pay, fee,<br/>emails, links"]
     B --> C["🌐 Website checker<br/>How old is the website?<br/>Does it copy a big brand?<br/>Can it even receive email?"]
     B --> D["🚩 Red-flag checker<br/>Asks for money or OTP?<br/>Moves you to Telegram?<br/>Rushes you?"]
-    B --> ML["🤖 ML text check (optional)<br/>Trained on 17k+ job postings<br/>Runs only if the model file is present"]
+    B --> ML["🤖 ML text check (optional)<br/>Trained on 17k+ job postings<br/>Runs only if model is present"]
     C --> E["🔢 Adds up the points<br/>score from 1 to 10"]
     D --> E
     ML --> E
     E --> F["💬 Plain answer<br/>score + reasons +<br/>what to do next"]
 ```
 
-Two helper agents do the checking at the same time, and an optional ML text classifier inside the main agent adds one more signal when its model file is present. Job-search and career agents can also ask Jaanch to check a listing *before* they show it to you.
-
 ---
 
 ## How to read the score
 
-<p align="center">
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/scale-dark.svg"><source media="(prefers-color-scheme: light)" srcset="assets/scale-light.svg"><img alt="Score scale: 1 to 3 low risk, 4 to 6 suspicious, 7 to 10 high risk" src="assets/scale-dark.svg" width="100%"></picture>
-</p>
+Every text offer starts at **2** (or 0–100 scale for documents). Warning signs add points and genuine credentials reduce risk:
 
-Every offer starts at **2**. Each warning sign adds points and each good sign takes some away:
+| What Jaanch finds | Text Score | Document Impact |
+|---|:---:|:---:|
+| 💸 Asks you to **pay a fee or deposit** to get the job | **+4** | **+35 pts** (Critical) |
+| 💸 Directs payment to a **personal UPI handle** (`@okaxis`, `@paytm`) | **+3** | **+25 pts** (High) |
+| 🏛️ Fabricated or invalid **MCA / CIN corporate registration number** | **+3** | **+20 pts** (High) |
+| 🎓 **Course / Mentorship upsell bait** (paid training before job) | **+3** | **+20 pts** (High) |
+| 🧠 Repeat scammer identified in **cross-student shared memory** | **+3** | **+20 pts** (High) |
+| 🎭 Website **copies a big company's name** (lookalike domain) | **+3** | **+30 pts** (Critical) |
+| 🆕 Website was **registered less than 30 days ago** | **+3** | **+25 pts** (High) |
+| 🔐 Asks for your **OTP, UPI PIN, card details** or remote access | **+3** | **+25 pts** (High) |
+| 📧 Recruiter uses **free webmail (Gmail, Yahoo)** for big company | **+2.5** | **+20 pts** (High) |
+| 📄 Asks for **blank cheque, original marksheets, or bond** | **+2.5** | **+20 pts** (High) |
+| ✈️ Moves you to **Telegram or a private WhatsApp group** | **+2** | **+15 pts** (Medium) |
+| ❓ The website **doesn't exist** or has no mail exchangers (MX) | **+2** | **+15 to 25 pts** |
+| 🤖 **Text matches fraudulent posting dataset** (ML classifier) | **+1.5 to +2** | **+15 pts** |
+| ⏳ **Artificial scarcity / rush** ("Only 3 slots left", "24 hrs only") | **+1** | **+10 pts** |
+| 🏢 **Valid MCA CIN registration number** | −1 | −15 pts |
+| 🏫 Verified **educational or campus placement domain** (`.ac.in`) | **−2** | −20 pts |
+| ✅ Recruiter email matches **company's official domain** | **−2** | −20 pts |
+| 📝 **Structured multi-round interview process** mentioned | **−1** | −10 pts |
+| ✅ Website is **more than 5 years old** | **−1** | −10 pts |
 
-| What Jaanch finds | Points |
-|---|:---:|
-| 💸 Asks you to **pay a fee or deposit** to get the job | **+4** |
-| 💸 Directs payment to a **personal UPI handle** (`@okaxis`, `@paytm`, `@ybl`) | **+3** |
-| 🏛️ Fabricated or invalid **MCA / CIN corporate registration number** | **+3** |
-| 🎓 **Course / Mentorship upsell bait** (requires paid training before internship) | **+3** |
-| 🧠 The same **phone, email, UPI ID, website or link** was already flagged in **another student's scam check** | **+3** |
-| 🎭 Website **copies a big company's name** (like `infosys-careers.in` or `wipr0.com`) | **+3** |
-| 🆕 Website was **made less than 30 days ago** | **+3** |
-| 🔐 Asks for your **OTP, UPI PIN, card details** or remote access to your phone | **+3** |
-| 👍 Pays you for **"tasks"** like liking videos or writing reviews | **+3** |
-| 📧 Says it's a big company but emails from **Gmail, Yahoo or Outlook** | **+2.5** |
-| 📄 Asks for **blank/cancelled cheque, original marksheets, or bond** | **+2.5** |
-| 🌐 **Reddit & Community discussions** flag company/domain for scam or fraud | **+2.5** |
-| ✈️ Moves you to **Telegram or a WhatsApp group / chat** (`chat.whatsapp.com`) | **+2** |
-| 🤑 Promises **a lot of money for very little work** | **+2** |
-| ❓ The website **doesn't exist** at all | **+2** |
-| 🤖 **Text matches fraudulent posting dataset** (ML classifier) | **+1.5 to +2** |
-| 📋 Uses **Google Forms / Linktree** for big company hiring | **+1.5** |
-| 📱 **Only personal mobile number** provided without official email | **+1.5** |
-| 🕐 Website less than 6 months old · its email can't receive mail · **direct selection without interview / application** | **+1.5** each |
-| ⏳ **Artificial scarcity / countdown** ("Only 3 slots left", "Batch filling fast") | **+1** |
-| 🛡️ Touts **MCA / CIN registration** to manufacture trust | **+1** |
-| 🎣 Vague or **performance-conditional stipend ("Up To ₹...")** | **+1** |
-| 🪪 Wants **Aadhaar, PAN or bank details** before any interview · **rushes you or pushes same-day induction** · uses **short links** · recruiter on a free email | **+1** each |
-| 👋 Starts with a generic **"Dear candidate"** | **+0.5** |
-| 🌐 Uses verified **enterprise ATS portal** (Greenhouse, Lever, Workday) | **−2** |
-| 🏫 Verified **educational or campus placement domain** (`.ac.in` / `.edu`) | **−2** |
-| ✅ Email comes from the **company's real website** | **−2** |
-| 📝 **Structured multi-round interview process** mentioned | **−1** |
-| ✅ Website is **more than 5 years old** | **−1** |
-
-The score always stays between 1 and 10.
+### Classification Tiers (0–100 Scale)
+* **0–29: LIKELY GENUINE** — Legitimate employer credentials, active email servers, standard interview process.
+* **30–59: SUSPICIOUS** — Unverified domain, missing employer verification, or non-standard communication.
+* **60–100: LIKELY FRAUD** — Direct monetary demands, personal UPI, lookalike brand domains, or forged credentials.
+* **INSUFFICIENT EVIDENCE** — Emitted when an offer contains insufficient verifiable text or contact information.
 
 ---
 
-## Does it work?
+## Web Chat Interface & REST API
 
-We wrote six test messages that copy real Indian job scams (and two genuine offers) and ran them through Jaanch:
+Jaanch includes a built-in Web Chat interface and REST API powered by FastAPI.
 
-<p align="center">
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/results-dark.svg"><source media="(prefers-color-scheme: light)" srcset="assets/results-light.svg"><img alt="Scores: fake Infosys email 10, fake TCS WhatsApp 10, Hinglish task scam 10, new startup offer 5, Internshala listing 1, Zoho campus offer 1" src="assets/results-dark.svg" width="100%"></picture>
-</p>
+### Launch the Web App
+```bash
+python run.py web
+```
+Open **`http://localhost:8000`** in your browser.
 
-All three scams scored **10**, both genuine offers scored **1**, and the borderline one landed in the middle. The messages are in [`samples/`](samples/).
+### Features:
+- 📎 **File Attachment (+ / Paperclip):** Upload PDF, DOCX, PNG, JPG, WEBP, TXT documents up to 15 MB.
+- 🖼️ **Image Previews & Metadata:** Live preview of uploaded screenshots and document size.
+- ⚡ **Interactive Risk Meter:** Visual 0–100 risk gauge and color-coded status pills.
+- 🔍 **Expandable Evidence Drawers:** Deep dive into positive signals, risk indicators, and limitations.
+- 💬 **Quick Follow-Up Buttons:** Instant one-click follow-up queries (*"Why is this suspicious?"*, *"Check domain"*, *"Is stipend realistic?"*).
+- 📋 **Copy Complaint Docket:** Instant clipboard copy of the pre-formatted cybercrime complaint docket.
 
-### Where does a score come from?
-
-Here's the fake Infosys email, point by point:
-
-<p align="center">
-<picture><source media="(prefers-color-scheme: dark)" srcset="assets/breakdown-dark.svg"><source media="(prefers-color-scheme: light)" srcset="assets/breakdown-light.svg"><img alt="Fake Infosys email: deposit +4, copies Infosys +3, website 11 days old +3, can't receive mail +1.5, wants Aadhaar/PAN/bank +1, pressure +1, short link +1, Dear Applicant +0.5; total 17, capped at 10" src="assets/breakdown-dark.svg" width="100%"></picture>
-</p>
-
-Every point comes from something you can see in the message or check about the website.
+### REST API Endpoints
+- `POST /api/documents/upload`: Multipart file upload with conversation tracking and full JSON analysis.
+- `GET  /api/documents/{doc_id}`: Retrieve a stored document's analysis by ID.
+- `GET  /api/documents/history`: List recent document analyses.
+- `POST /api/chat`: Conversational chat endpoint handling pasted offers, follow-up Q&A, and dockets.
+- `GET  /api/health`: Health probe and service metadata.
+- `GET  /`: Web Chat interface.
 
 ---
 
@@ -115,23 +157,11 @@ Every point comes from something you can see in the message or check about the w
 
 Every ChatGPT conversation is on its own. Jaanch is one agent that every student talks to, so it learns from all of them.
 
-When an offer comes out **high risk**, Jaanch remembers the scammer's contacts: phone numbers, emails, websites, UPI IDs, Telegram accounts and short or Google Form links. If another student later pastes a *different* message that reuses any of them, Jaanch tells them: *"This email address was already flagged in 3 earlier scam checks"* (+3 points).
+When an offer comes out **high risk**, Jaanch remembers the scammer's contacts: phone numbers, emails, websites, UPI IDs, Telegram accounts and short links. If another student later pastes a *different* message that reuses any of them, Jaanch warns them: *"This email address was already flagged in earlier scam checks"*.
 
-| | Without memory | After one student checks the TCS fee scam |
-|---|---|---|
-| A new, polite message from the same Gmail (`samples/demo_same_scammer.txt`) | 4 · Suspicious | **8 · High risk** |
-
-- **Private by design.** Only a keyed fingerprint (HMAC-SHA256) of each contact is stored, never the contact and never the message.
-- **Can't be used to frame a real company.** Official company and college domains, Gmail/Yahoo as domains, and WhatsApp/Telegram themselves are never stored, and only high-risk results teach the memory.
-- **No double counting.** Checking the same message again doesn't count as a second report.
-
-## Why you can trust the score
-
-- **The AI never decides the score.** The LLM only reads the messy message and explains the result in simple words. The score itself is a fixed mathematical formula over verifiable signals (domain intelligence, rule checks, and ML text classification).
-- **The ML model provides evidence, not a black-box verdict.** The classifier acts as an additional evidence source (+1.5 to +2.0 risk weight). It never overrides strong rule or domain evidence.
-- **It understands "no".** *"There is **no** registration fee"* is not counted as asking for a fee.
-- **It keeps working when something breaks.** If a helper agent doesn't answer in 20 seconds, the main agent does that check itself. If the ML model artifact is missing or disabled, Jaanch continues with rule and domain evidence. If a website lookup fails, Jaanch notes it instead of guessing.
-- **It speaks Hinglish.** Many scams are written in Hinglish, and Jaanch catches those red flags too.
+- **Private by design.** Only a keyed fingerprint (HMAC-SHA256) of each contact is stored, never the contact and never the raw message.
+- **Can't be used to frame a real company.** Official company and college domains, Gmail/Yahoo as domains, and WhatsApp/Telegram themselves are never stored.
+- **No double counting.** Checking the same message repeatedly does not inflate the count.
 
 ---
 
@@ -139,11 +169,11 @@ When an offer comes out **high risk**, Jaanch remembers the scammer's contacts: 
 
 1. **Don't pay anything** and stop replying. Never share an OTP, PIN or ID documents.
 2. **Already paid or shared bank details?** Call the cyber-fraud helpline **1930** right away. The faster you report, the better the chance of freezing the money.
-3. File a complaint at **[cybercrime.gov.in](https://cybercrime.gov.in)**. Keep screenshots, the sender's number or email, and any payment IDs.
+3. File a complaint at **[cybercrime.gov.in](https://cybercrime.gov.in)**.
 4. Report the number on **[Sanchar Saathi → Chakshu](https://sancharsaathi.gov.in)**, and block the chat in WhatsApp or Telegram.
 5. Tell your college placement cell so they can warn other students.
 
-In ASI:One, tap **"How do I report this?"** on Jaanch's answer to get these steps.
+In ASI:One or Web Chat, click **"How do I report this?"** or **"Copy Cybercrime Docket"** to get pre-formatted details.
 
 ---
 
@@ -156,21 +186,21 @@ In ASI:One, tap **"How do I report this?"** on Jaanch's answer to get these step
 
 | Agent | What it does | Protocols | Address |
 |---|---|---|---|
-| `jaanch` | Talks to users in ASI:One and runs the check | AgentChatProtocol 0.3.0, JaanchOfferVerification 1.0.0 | *fill in after first run* |
+| `jaanch` | Talks to users in ASI:One, handles document attachments & runs check | AgentChatProtocol 0.3.0, JaanchOfferVerification 1.0.0 | *fill in after first run* |
 | `jaanch-domain-intel` | Domain age (RDAP), mail server (MX), lookalike brands | JaanchDomainIntel 0.1.0 | *fill in after first run* |
 | `jaanch-pattern-check` | Red flags in the text | JaanchPatternCheck 0.1.0 | *fill in after first run* |
 | `jaanch-reputation-intel` | Reddit & community discussion sentiment and scam reports | JaanchReputationIntel 0.1.0 | *fill in after first run* |
 
 ```mermaid
 sequenceDiagram
-    participant U as Student in ASI:One
+    participant U as Student in ASI:One / Web
     participant J as jaanch
     participant D as jaanch-domain-intel
     participant P as jaanch-pattern-check
     participant R as jaanch-reputation-intel
-    participant M as ML model (inside jaanch)
-    U->>J: ChatMessage (the offer)
-    J->>J: ASI1 + rules extract company, pay, fee, emails, links
+    participant M as ML model
+    U->>J: ChatMessage (text or document upload)
+    J->>J: Parse document / extract facts
     par checks run in parallel
         J->>D: OfferFacts
         D-->>J: domain age, MX, lookalikes
@@ -185,14 +215,9 @@ sequenceDiagram
         M-->>J: ML text pattern signal
     end
     Note over J: no specialist reply in 20 s → runs that check itself
-    J->>J: fixed formula → score 1–10
-    J-->>U: verdict, reasons, interactive card
+    J->>J: fixed formula → score 0–100
+    J-->>U: verdict, reasons, interactive card & follow-up Q&A
 ```
-
-Other agents can call the same check:
-
-- Request: `VerifyOfferRequest { offer_text: str, source_url: str | null }`
-- Response: `VerifyOfferResponse { risk_score: int, verdict: "low_risk" | "suspicious" | "high_risk", reasons: [str], checked_domains: [str] }`
 
 </details>
 
@@ -205,32 +230,24 @@ Jaanch integrates a machine learning classifier trained on the **Employment Scam
 
 ### 1. Dataset Download & Placement
 1. Download `fake_job_postings.csv` from [Kaggle EMSCAD Dataset](https://www.kaggle.com/datasets/shivamb/real-or-fake-fake-jobposting-prediction).
-2. Place the file at:
-   ```
-   data/raw/fake_job_postings.csv
-   ```
+2. Place the file at `data/raw/fake_job_postings.csv`.
 
 ### 2. Data Preparation & Deduplication
-Run data inspection, deduplication, composite text construction, and stratified splitting (70% train, 15% val, 15% test):
 ```bash
 python scripts/prepare_dataset.py
 ```
 This writes processed CSVs to `data/processed/`, label mapping to `data/labels/target_mapping.json`, and an inspection report to `data/reports/dataset_report.json`.
 
 ### 3. Model Training
-Train the scikit-learn TF-IDF + class-weighted Logistic Regression pipeline and compare with a Linear SVM baseline:
 ```bash
 python scripts/train_model.py
 ```
-Saves the fitted pipeline to `models/job_scam_model.joblib` and full metadata to `models/job_scam_model_metadata.json`.
+Saves the fitted pipeline to `models/job_scam_model.joblib` and metadata to `models/job_scam_model_metadata.json`.
 
 ### 4. Held-Out Evaluation
-Evaluate the model on the held-out test set (isolated from training and threshold selection):
 ```bash
 python scripts/evaluate_model.py
 ```
-Outputs confusion matrix, scam precision/recall/F1, PR-AUC, and baseline comparisons to `data/reports/evaluation_report.json`.
-
 **Measured Test Metrics (Held-out Test Set, n=2,633):**
 * PR-AUC: 0.8653 | ROC-AUC: 0.9827
 * Majority Class Baseline F1: 0.0000
@@ -241,17 +258,9 @@ Outputs confusion matrix, scam precision/recall/F1, PR-AUC, and baseline compari
   * Legitimate Precision: 98.77% | Legitimate Recall: 99.12%
 
 ### 5. Enabling / Disabling ML Inference
-The trained model file (`models/job_scam_model.joblib`) is **not in this repo** because of its size. Build it with steps 1–3 above; without it, Jaanch skips this check and scores on the domain and red-flag evidence alone. ML inference is enabled by default if the model artifact exists. You can toggle it via environment variable:
 * Enable: `JAANCH_ENABLE_ML=1`
 * Disable: `JAANCH_ENABLE_ML=0`
 * Custom model path: `JAANCH_ML_MODEL_PATH=path/to/custom_model.joblib`
-
-### 6. Known Limitations
-* **Historical job board data:** EMSCAD is derived from global/English online job postings, while modern Indian student scams predominantly occur over WhatsApp/Telegram with Hinglish text and UPI demands.
-* **Complementary evidence:** The model evaluates textual resemblance to scam postings; it does not replace live domain lookups or payment demand detection.
-
-### 7. Privacy & Git Hygiene
-Raw datasets, processed splits, and binary `.joblib` models are gitignored. Never commit `.env`, credentials, phone numbers, or private candidate messages.
 
 </details>
 
@@ -263,30 +272,27 @@ Raw datasets, processed splits, and binary `.joblib` models are gitignored. Neve
 Needs Python 3.10–3.13.
 
 ```bash
+# 1. Install dependencies
 pip install -r requirements.txt
-cp .env.example .env        # add ASI1_API_KEY and three seed phrases
 
-python scripts/check.py samples/scam_fee_whatsapp.txt     # one check, no agents
-JAANCH_MAILBOX=0 python scripts/local_demo.py             # all agents + test clients, locally
-python run.py                                             # all agents, connected to Agentverse
-python run.py jaanch    # or: domain / pattern; one agent per terminal
-pytest -q                                                 # 68 tests, no network needed (4 skip until you build the ML model)
+# 2. Configure environment
+cp .env.example .env        # add ASI1_API_KEY and seed phrases
+
+# 3. Optional: Install OCR engine (for scanned images and screenshots)
+# On Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
+# Set in .env: TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
+# On Ubuntu/Debian: sudo apt-get install tesseract-ocr
+
+# 4. Run Web Chat & REST API
+python run.py web           # Available at http://localhost:8000
+
+# 5. Run Agents on Agentverse
+python run.py               # All agents connected to Agentverse
+python run.py jaanch        # Run individual agent
+
+# 6. Run Tests
+pytest -v                   # 104 tests, no network needed
 ```
-
-On Windows, set variables with `set JAANCH_MAILBOX=0` before the command.
-
-</details>
-
-<details>
-<summary><b>Put it on Agentverse and ASI:One</b></summary>
-
-<br>
-
-1. Get an ASI1 API key at asi1.ai/dashboard/api-keys and put it in `.env` with three long random seed phrases.
-2. `python run.py`. It prints the three agent addresses; copy them into the agents table above. (If ASI:One can't reach the agents when they share one process, run `python run.py jaanch`, `python run.py domain` and `python run.py pattern` in three terminals instead.)
-3. Open the Agent Inspector link printed for `jaanch`, click **Connect → Mailbox**. Repeat for the two specialists.
-4. In Agentverse, open the `jaanch` profile and check that the README and badges show. Click **Chat with Agent** to open ASI:One, then paste a sample from `samples/`.
-5. Share the ASI:One chat to get the public chat URL for the submission.
 
 </details>
 
@@ -296,14 +302,27 @@ On Windows, set variables with `set JAANCH_MAILBOX=0` before the command.
 <br>
 
 ```
-agents/        the three uAgents (orchestrator + two specialists) and their Agentverse READMEs
-data/          dataset directory (raw, processed, labels, reports)
-jaanch/        the checking logic: extraction, domain intel, patterns, ML detector, scoring, ASI1 calls
+agents/        the uAgents (orchestrator + specialists) and Agentverse READMEs
+data/          dataset directory (raw, processed, labels, reports, uploads)
+jaanch/        core detection logic:
+               ├── api.py               FastAPI REST backend and web router
+               ├── web/                 Integrated Web Chat interface
+               ├── document_parser.py   PDF, DOCX, Image, and TXT parser + OCR
+               ├── document_security.py Magic-byte validation, upload limits, anti-injection
+               ├── document_analyzer.py Hybrid 0-100 fraud scoring engine
+               ├── document_store.py    SQLite document and conversation persistence
+               ├── document_qa.py       Conversational follow-up Q&A engine
+               ├── extract.py           Fact and entity extraction
+               ├── domain_intel.py      RDAP domain age, MX records, lookalikes
+               ├── patterns.py          Red-flag and scam phrase detection
+               ├── pipeline.py          Text scoring orchestration & ML inference
+               ├── scoring.py           Rule-based scoring formulas
+               └── cards.py             ASI:One ACP and web interactive cards
 models/        trained ML model pipeline artifact and metadata JSON
-samples/       test messages (synthetic and real examples)
+samples/       test messages and offer letters (synthetic and real examples)
 scripts/       data prep, model training, evaluation, one-off check, and local demo
-tests/         66 unit and integration tests with offline fixtures
-run.py         starts the agents
+tests/         104 unit and integration tests with offline fixtures
+run.py         entry point: starts agents or web app (python run.py web)
 ```
 
 </details>
@@ -312,13 +331,19 @@ run.py         starts the agents
 
 ## What's built and what's next
 
-**Built:** three agents with the Chat Protocol, a shared scam memory across all students' checks and a public verification protocol, an ML recruitment scam classifier trained on EMSCAD, ASI1 extraction and explanation with fallbacks, intent routing for general Q&A and scam advice, live website checks, Hinglish red flags, detection for mass WhatsApp induction traps, an ASI:One card with "How do I report this?", a local demo, and offline tests.
+**Built:**
+- 📄 **Offer Letter Fraud Detection Agent:** Complete document upload (PDF, DOCX, JPG/PNG/WEBP, TXT up to 15 MB), magic byte validation, page tracking, OCR fallback, MCA CIN validation, 0–100 explainable risk scoring, interactive cards, and follow-up Q&A.
+- 🌐 **Web Chat & REST API:** FastAPI-powered chat interface with file drag-and-drop, risk meter, and endpoints.
+- 🤖 **ML Scam Classifier:** Trained on EMSCAD (17,880 postings) with 0.865 PR-AUC and 78.7% F1.
+- 🧠 **Cross-Student Shared Scam Memory:** Keyed HMAC-SHA256 fingerprinting that catches repeat scam contacts across independent checks without storing private messages.
+- 🌐 **Live Infrastructure Intel:** RDAP domain age, DNS MX mail servers, and lookalike detection.
+- 🇮🇳 **Hinglish & Local Traps:** Hinglish phrasing, Telegram task fraud, and fake MCA registrations.
+- 📋 **Cybercrime Docket Generator:** Pre-formatted complaint docket ready for 1930 / cybercrime.gov.in.
 
 **Next:**
-- 📸 Read **screenshots** of offers, since most scams arrive as images on WhatsApp.
-- 🤝 A shared list where reports from verified students raise the risk of repeat scam numbers and websites.
-- 💳 A paid deep report using the Payment Protocol.
-- 🏢 A bigger list of real employers to compare against.
+- 🤝 A verified college placement cell verification network.
+- 💳 A paid deep background verification report using the Fetch.ai Payment Protocol.
+- 🏢 Direct API integration with the Ministry of Corporate Affairs (MCA) live company master data API.
 
 ---
 
