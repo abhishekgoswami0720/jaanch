@@ -5,6 +5,8 @@ __pycache__/
 .venv/
 venv/
 *.log
+# Agent storage (includes the scam memory fingerprints)
+*_data.json
 
 # Data & Models (ignore large/raw data and binary model artifacts)
 data/raw/*

@@ -59,6 +59,7 @@ Every offer starts at **2**. Each warning sign adds points and each good sign ta
 | 💸 Directs payment to a **personal UPI handle** (`@okaxis`, `@paytm`, `@ybl`) | **+3** |
 | 🏛️ Fabricated or invalid **MCA / CIN corporate registration number** | **+3** |
 | 🎓 **Course / Mentorship upsell bait** (requires paid training before internship) | **+3** |
+| 🧠 The same **phone, email, UPI ID, website or link** was already flagged in **another student's scam check** | **+3** |
 | 🎭 Website **copies a big company's name** (like `infosys-careers.in` or `wipr0.com`) | **+3** |
 | 🆕 Website was **made less than 30 days ago** | **+3** |
 | 🔐 Asks for your **OTP, UPI PIN, card details** or remote access to your phone | **+3** |
@@ -109,6 +110,20 @@ Here's the fake Infosys email, point by point:
 Every point comes from something you can see in the message or check about the website.
 
 ---
+
+## Shared scam memory: what ChatGPT can't do
+
+Every ChatGPT conversation is on its own. Jaanch is one agent that every student talks to, so it learns from all of them.
+
+When an offer comes out **high risk**, Jaanch remembers the scammer's contacts: phone numbers, emails, websites, UPI IDs, Telegram accounts and short or Google Form links. If another student later pastes a *different* message that reuses any of them, Jaanch tells them: *"This email address was already flagged in 3 earlier scam checks"* (+3 points).
+
+| | Without memory | After one student checks the TCS fee scam |
+|---|---|---|
+| A new, polite message from the same Gmail (`samples/demo_same_scammer.txt`) | 4 · Suspicious | **8 · High risk** |
+
+- **Private by design.** Only a keyed fingerprint (HMAC-SHA256) of each contact is stored, never the contact and never the message.
+- **Can't be used to frame a real company.** Official company and college domains, Gmail/Yahoo as domains, and WhatsApp/Telegram themselves are never stored, and only high-risk results teach the memory.
+- **No double counting.** Checking the same message again doesn't count as a second report.
 
 ## Why you can trust the score
 
@@ -297,7 +312,7 @@ run.py         starts the agents
 
 ## What's built and what's next
 
-**Built:** three agents with the Chat Protocol and a public verification protocol, an ML recruitment scam classifier trained on EMSCAD, ASI1 extraction and explanation with fallbacks, intent routing for general Q&A and scam advice, live website checks, Hinglish red flags, detection for mass WhatsApp induction traps, an ASI:One card with "How do I report this?", a local demo, and offline tests.
+**Built:** three agents with the Chat Protocol, a shared scam memory across all students' checks and a public verification protocol, an ML recruitment scam classifier trained on EMSCAD, ASI1 extraction and explanation with fallbacks, intent routing for general Q&A and scam advice, live website checks, Hinglish red flags, detection for mass WhatsApp induction traps, an ASI:One card with "How do I report this?", a local demo, and offline tests.
 
 **Next:**
 - 📸 Read **screenshots** of offers, since most scams arrive as images on WhatsApp.

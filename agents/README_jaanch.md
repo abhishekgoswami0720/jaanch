@@ -10,6 +10,7 @@ Paste a job or internship offer (a WhatsApp or Telegram message, an email, or of
 - **The message**: fee or deposit demands, OTP / UPI PIN / card requests, "like videos and earn" task scams, Telegram-only contact, unrealistic daily pay, no interview, pressure to act fast. English and Hinglish.
 - **The sender** (via the `jaanch-domain-intel` agent): how old the recruiter's website is (RDAP), whether its email domain can receive mail (MX), and whether it imitates a big employer such as Infosys, TCS or Amazon.
 - **The claim**: a recruiter using Gmail while claiming to hire for a big company.
+- **Shared scam memory**: if another student's check already flagged the same phone number, email, UPI ID, website or link, Jaanch tells you. Only keyed fingerprints of scammer contacts are stored, never messages.
 
 The score is a fixed formula over this evidence, not an LLM opinion, so the same message always gets the same score. ASI1 extracts facts from messy text and explains the result in plain words.
 

@@ -3,7 +3,8 @@
 Flow for every pasted offer:
   1. ASI1 + rules pull out company, pay, fee, emails, domains, links.
   2. The facts go to the domain agent and the pattern agent at the same time.
-  3. Their evidence is combined into a fixed-formula 1-10 risk score.
+  3. Their evidence, plus the shared scam memory (contacts already seen in
+     other students' scam checks), is combined into a fixed-formula 1-10 score.
   4. ASI1 explains the result; the reply carries an interactive card.
 If a specialist doesn't answer in time, the orchestrator runs that check itself,
 so the user always gets an answer.
@@ -23,7 +24,7 @@ from uagents_core.contrib.protocols.chat import (
     chat_protocol_spec,
 )
 
-from jaanch import llm
+from jaanch import llm, memory
 from jaanch.cards import (
     REPORT_STEPS,
     WELCOME,
@@ -86,7 +87,20 @@ async def investigate(ctx: Context, text: str) -> tuple[Result, bool]:
         reputation = await check_reputation(facts)
     pred = predict_offer(facts.text)
     ml_sig = pred.to_signal()
-    return combine(facts, domain, pattern, ml_signal=ml_sig, reputation=reputation), is_offer
+    # Shared scam memory: has any student already met this scammer's number, email or link?
+    try:
+        seen = memory.lookup(ctx.storage, facts)
+    except Exception as err:
+        ctx.logger.warning(f"scam memory lookup failed: {err}")
+        seen = []
+    result = combine(facts, domain, pattern, ml_signal=ml_sig, reputation=reputation, extra=seen)
+    try:
+        saved = memory.learn_from(ctx.storage, facts, result.verdict)
+        if saved:
+            ctx.logger.info(f"scam memory: remembered {saved} contact(s) from this scam")
+    except Exception as err:
+        ctx.logger.warning(f"scam memory save failed: {err}")
+    return result, is_offer
 
 
 def _strip_mention(text: str) -> str:
@@ -115,8 +129,8 @@ def _selection(text: str) -> dict:
     return {}
 
 
-# In-memory shared collective threat ledger across scans
-_COMMUNITY_FLAGGED_SCAMS: dict[str, int] = {}
+# Latest result per user, for the "get cybercrime docket" button.
+_LAST_RESULT: dict[str, Result] = {}
 
 
 @chat_proto.on_message(ChatMessage)
@@ -133,7 +147,7 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
         await ctx.send(sender, ChatMessage(content=[TextContent(text=REPORT_STEPS)]))
         return
     if action == "get_docket":
-        last_investigation = getattr(ctx, "_last_investigation", None)
+        last_investigation = _LAST_RESULT.get(sender)
         if last_investigation:
             res = last_investigation
             docket_text = generate_cybercrime_docket(res.facts, res.risk, res.signals)
@@ -163,24 +177,10 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
         await ctx.send(sender, ChatMessage(content=[TextContent(text=advice_text)]))
         return
 
-    # Collective memory check: Record and alert if repeated scam target
-    for target in (result.facts.phones + result.facts.upis + [d for d in result.facts.domains if "whatsapp" in d or "telegram" in d]):
-        count = _COMMUNITY_FLAGGED_SCAMS.get(target, 0) + 1
-        _COMMUNITY_FLAGGED_SCAMS[target] = count
-        if count > 1 and result.risk >= 5:
-            result.signals.insert(
-                0,
-                Signal(
-                    id="collective_threat_alert",
-                    label=f"Repeat Scam Alert: Scanned by {count} job-seekers recently",
-                    weight=1.5,
-                    evidence=f"Target {target} repeatedly queried and flagged",
-                    source="collective-memory",
-                ),
-            )
-
-    # Save to context for one-click docket generation
-    setattr(ctx, "_last_investigation", result)
+    # Repeat scammers are caught by the shared scam memory inside investigate().
+    # Keep this user's latest result for the one-click cybercrime docket
+    # (ctx is rebuilt for every message, so it can't hold state).
+    _LAST_RESULT[sender] = result
 
     narration = await llm.explain(text, result.risk, result.verdict_text, result.signals, logger=ctx.logger)
     payload = verdict_card(result.risk, result.verdict, result.verdict_text, result.signals, result.checked)

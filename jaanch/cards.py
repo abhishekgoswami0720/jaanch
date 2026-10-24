@@ -103,4 +103,4 @@ REPORT_STEPS = """**How to report a job scam in India**
 
 WELCOME = """Hi, I'm **Jaanch**. Paste a job or internship offer (the WhatsApp/Telegram message, email or offer letter text) and I'll check it for scam signs.
 
-I check the message for fee demands, OTP/bank requests and pressure tactics, look up how old the recruiter's website is, whether its email domain is real, and whether it imitates a big company. You get a 1–10 risk score with the evidence."""
+I check the message for fee demands, OTP/bank requests and pressure tactics, look up how old the recruiter's website is, whether its email domain is real, whether it imitates a big company, and whether another student already flagged the same number, email or link. You get a 1–10 risk score with the evidence."""
