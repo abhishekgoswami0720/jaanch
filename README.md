@@ -68,11 +68,15 @@ Every offer starts at **2**. Each warning sign adds points and each good sign ta
 | ❓ The website **doesn't exist** at all | **+2** |
 | 🤖 **Text matches fraudulent posting dataset** (ML classifier) | **+1.5 to +2** |
 | 📋 Uses **Google Forms / Linktree** for big company hiring | **+1.5** |
+| 📱 **Only personal mobile number** provided without official email | **+1.5** |
 | 🕐 Website less than 6 months old · its email can't receive mail · **direct selection without interview / application** | **+1.5** each |
+| ⏳ **Artificial scarcity / countdown** ("Only 3 slots left", "Batch filling fast") | **+1** |
+| 🛡️ Touts **MCA / CIN registration** to manufacture trust | **+1** |
 | 🎣 Vague or **performance-conditional stipend ("Up To ₹...")** | **+1** |
 | 🪪 Wants **Aadhaar, PAN or bank details** before any interview · **rushes you or pushes same-day induction** · uses **short links** · recruiter on a free email | **+1** each |
 | 👋 Starts with a generic **"Dear candidate"** | **+0.5** |
 | 🌐 Uses verified **enterprise ATS portal** (Greenhouse, Lever, Workday) | **−2** |
+| 🏫 Verified **educational or campus placement domain** (`.ac.in` / `.edu`) | **−2** |
 | ✅ Email comes from the **company's real website** | **−2** |
 | 📝 **Structured multi-round interview process** mentioned | **−1** |
 | ✅ Website is **more than 5 years old** | **−1** |

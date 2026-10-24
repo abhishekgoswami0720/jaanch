@@ -89,6 +89,23 @@ def test_enterprise_ats_and_structured_interview_green_flags():
     assert r.verdict == "low_risk"
 
 
+def test_scarcity_mca_claims_and_phone_only():
+    text = (
+        "Only 3 slots left! Batch filling fast. We are a Govt approved company with CIN registered. "
+        "Contact HR directly at +91 9876543210 for immediate joining."
+    )
+    r = run(text)
+    ids = {s.id for s in r.signals}
+    assert {"scarcity", "mca_claims", "phone_only_contact"} <= ids
+
+
+def test_academic_institution_bonus():
+    text = "Campus placements coordinator. Check details on https://placement.gla.ac.in/jobs"
+    r = run(text)
+    ids = {s.id for s in r.signals}
+    assert "academic_institution" in ids
+
+
 # ---- resilience ----------------------------------------------------------------
 
 def test_network_down_still_answers():

@@ -101,6 +101,20 @@ RULES: list[tuple[str, str, float, str]] = [
         r"dear\s+(candidate|applicant|student|user|sir/madam)",
     ),
     (
+        "scarcity",
+        "Artificial scarcity or fast countdown pressure ('Only X slots left')",
+        1.0,
+        r"only\s+\d+\s*(slots?|seats?|vacanc\w*)\s*(left|remaining)|limited\s+(slots?|seats?)"
+        r"|offer\s+expires\s+in\s+\d+\s*(hours?|hrs?|minutes?|days?)|batch\s+filling\s+fast",
+    ),
+    (
+        "mca_claims",
+        "Touts MCA / CIN or Govt registration to artificially manufacture trust",
+        1.0,
+        r"(mca|cin|msme)\s*(registered|approved|certified|no\.?|number|govt|gov)"
+        r"|govt\s+approved\s+company|government\s+of\s+india\s+certified",
+    ),
+    (
         "structured_interview",
         "Structured multi-round interview process mentioned",
         -1.0,
@@ -186,6 +200,31 @@ def check_patterns(facts: OfferFacts) -> PatternReport:
                 label="Uses verified enterprise Applicant Tracking System (ATS)",
                 weight=-2.0,
                 evidence=", ".join(ats_used),
+                source=SOURCE,
+            )
+        )
+
+    # Official College / University Placement domain (.edu, .ac.in)
+    academic_domains = [d for d in facts.domains if d.endswith(".edu") or d.endswith(".ac.in")]
+    if academic_domains:
+        signals.append(
+            Signal(
+                id="academic_institution",
+                label="Verified educational or campus placement domain (.ac.in / .edu)",
+                weight=-2.0,
+                evidence=", ".join(academic_domains),
+                source=SOURCE,
+            )
+        )
+
+    # Recruiter only uses personal mobile numbers with no official email or domain
+    if facts.phones and not facts.emails and not facts.domains:
+        signals.append(
+            Signal(
+                id="phone_only_contact",
+                label="Only personal mobile number provided with no official company email",
+                weight=1.5,
+                evidence=", ".join(facts.phones[:3]),
                 source=SOURCE,
             )
         )
