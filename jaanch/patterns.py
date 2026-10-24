@@ -6,7 +6,7 @@ adds them up. Keywords include common Hinglish phrasing used in WhatsApp scams.
 
 import re
 
-from .brands import URL_SHORTENERS
+from .brands import ATS_DOMAINS, PUBLIC_FORM_DOMAINS, URL_SHORTENERS
 from .extract import display_brand, find_brands, free_mail_used
 from .models import OfferFacts, PatternReport, Signal
 
@@ -23,10 +23,26 @@ RULES: list[tuple[str, str, float, str]] = [
         r"|refundable\s+(amount|deposit)",
     ),
     (
+        "course_upsell_bait",
+        "Presents internship but requires completing paid training/mentorship first",
+        3.0,
+        r"(course|training|mentorship|certification)\s+(fee|charges?|price|cost|pack)"
+        r"|(internship|program)\s+cum\s+training|training\s+plus\s+internship"
+        r"|must\s+complete\s+(the\s+)?(training|course|module)\s+(before|to\s+get|for)\s+(internship|stipend)"
+        r"|mentor(?:ship)?\s+(fee|charges|deposit)",
+    ),
+    (
         "secret_data",
         "Asks for an OTP, UPI PIN, card details or remote access to your phone",
         3.0,
         r"\botp\b|upi\s*pin|\bcvv\b|debit\s*card|credit\s*card|anydesk|teamviewer|screen\s*share",
+    ),
+    (
+        "dangerous_documents",
+        "Asks for blank/cancelled cheque, original certificates, or bond",
+        2.5,
+        r"(blank|cancelled|canceled)\s+cheque|original\s+(certificate|marksheet|documents)"
+        r"|service\s+agreement\s+bond|security\s+cheque|surrender\s+(original|documents)",
     ),
     (
         "id_documents",
@@ -56,6 +72,13 @@ RULES: list[tuple[str, str, float, str]] = [
         r"|daily\s+(payout|payment|income)|ghar\s+baithe|work\s+from\s+home[^.\n]{0,40}(earn|daily)",
     ),
     (
+        "bait_stipend",
+        "Vague or performance-conditional stipend claim ('Up To ₹...')",
+        1.0,
+        r"stipend\s*:\s*up\s*to\s*(?:rs\.?|inr|₹)?\s?\d|up\s*to\s*(?:rs\.?|inr|₹)\s?\d[\d,]*\s*(?:stipend|per\s*month|pm)?"
+        r"|performance[\s-]based\s+stipend|stipend[^.\n]{0,25}based\s+on\s+performance",
+    ),
+    (
         "no_interview",
         "Direct selection or induction without interview/application",
         1.5,
@@ -76,6 +99,12 @@ RULES: list[tuple[str, str, float, str]] = [
         "Generic 'Dear candidate' greeting instead of your name",
         0.5,
         r"dear\s+(candidate|applicant|student|user|sir/madam)",
+    ),
+    (
+        "structured_interview",
+        "Structured multi-round interview process mentioned",
+        -1.0,
+        r"(technical\s+round|coding\s+round|panel\s+interview|take-home\s+assignment|hiring\s+manager\s+round|behavioral\s+round)",
     ),
 ]
 
@@ -134,5 +163,31 @@ def check_patterns(facts: OfferFacts) -> PatternReport:
     elif free:
         signals.append(Signal(id="freemail", label="Recruiter writes from a free email address",
                               weight=1.0, evidence=", ".join(free), source=SOURCE))
+
+    # Public forms (Google Forms, linktree) used for big company recruitment
+    public_forms = sorted(set(facts.domains) & PUBLIC_FORM_DOMAINS)
+    if public_forms and brands:
+        signals.append(
+            Signal(
+                id="public_form_recruitment",
+                label=f"Claims to hire for {display_brand(brands[0])} using a public form/link",
+                weight=1.5,
+                evidence=", ".join(public_forms),
+                source=SOURCE,
+            )
+        )
+
+    # Standard corporate Applicant Tracking System (ATS) used -> high confidence legitimate
+    ats_used = sorted(set(facts.domains) & ATS_DOMAINS)
+    if ats_used:
+        signals.append(
+            Signal(
+                id="ats_portal",
+                label="Uses verified enterprise Applicant Tracking System (ATS)",
+                weight=-2.0,
+                evidence=", ".join(ats_used),
+                source=SOURCE,
+            )
+        )
 
     return PatternReport(signals=signals)

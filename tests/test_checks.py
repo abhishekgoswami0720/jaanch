@@ -63,8 +63,30 @@ def test_whatsapp_induction_bait_scam():
     )
     r = run(text)
     ids = {s.id for s in r.signals}
-    assert {"off_platform", "no_interview", "urgency"} <= ids
-    assert r.risk >= 5  # At least suspicious (base 2 + 2 + 1.5 + 1 = 6.5 -> 6/7)
+    assert {"off_platform", "no_interview", "urgency", "bait_stipend"} <= ids
+    assert r.risk >= 6
+
+
+def test_course_upsell_and_cheque_blackmail():
+    text = (
+        "Selected candidates must pay mentorship fee of Rs 2,500 and submit a cancelled cheque "
+        "along with original certificates for the 3-month internship program."
+    )
+    r = run(text)
+    ids = {s.id for s in r.signals}
+    assert {"course_upsell_bait", "dangerous_documents"} <= ids
+    assert r.verdict == "high_risk"
+
+
+def test_enterprise_ats_and_structured_interview_green_flags():
+    text = (
+        "Thank you for interviewing with us. Please track your application for Backend Engineer on Lever: "
+        "https://jobs.lever.co/techcorp/12345. Next is a technical round and hiring manager round."
+    )
+    r = run(text)
+    ids = {s.id for s in r.signals}
+    assert {"ats_portal", "structured_interview"} <= ids
+    assert r.verdict == "low_risk"
 
 
 # ---- resilience ----------------------------------------------------------------

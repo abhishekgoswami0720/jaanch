@@ -56,19 +56,25 @@ Every offer starts at **2**. Each warning sign adds points and each good sign ta
 | What Jaanch finds | Points |
 |---|:---:|
 | 💸 Asks you to **pay a fee or deposit** to get the job | **+4** |
+| 🎓 **Course / Mentorship upsell bait** (requires paid training before internship) | **+3** |
 | 🎭 Website **copies a big company's name** (like `infosys-careers.in` or `wipr0.com`) | **+3** |
 | 🆕 Website was **made less than 30 days ago** | **+3** |
 | 🔐 Asks for your **OTP, UPI PIN, card details** or remote access to your phone | **+3** |
 | 👍 Pays you for **"tasks"** like liking videos or writing reviews | **+3** |
 | 📧 Says it's a big company but emails from **Gmail, Yahoo or Outlook** | **+2.5** |
+| 📄 Asks for **blank/cancelled cheque, original marksheets, or bond** | **+2.5** |
 | ✈️ Moves you to **Telegram or a WhatsApp group / chat** (`chat.whatsapp.com`) | **+2** |
 | 🤑 Promises **a lot of money for very little work** | **+2** |
 | ❓ The website **doesn't exist** at all | **+2** |
 | 🤖 **Text matches fraudulent posting dataset** (ML classifier) | **+1.5 to +2** |
+| 📋 Uses **Google Forms / Linktree** for big company hiring | **+1.5** |
 | 🕐 Website less than 6 months old · its email can't receive mail · **direct selection without interview / application** | **+1.5** each |
+| 🎣 Vague or **performance-conditional stipend ("Up To ₹...")** | **+1** |
 | 🪪 Wants **Aadhaar, PAN or bank details** before any interview · **rushes you or pushes same-day induction** · uses **short links** · recruiter on a free email | **+1** each |
 | 👋 Starts with a generic **"Dear candidate"** | **+0.5** |
+| 🌐 Uses verified **enterprise ATS portal** (Greenhouse, Lever, Workday) | **−2** |
 | ✅ Email comes from the **company's real website** | **−2** |
+| 📝 **Structured multi-round interview process** mentioned | **−1** |
 | ✅ Website is **more than 5 years old** | **−1** |
 
 The score always stays between 1 and 10.

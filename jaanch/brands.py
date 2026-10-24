@@ -70,6 +70,18 @@ PLATFORM_DOMAINS = {
     "forms.gle", "docs.google.com", "drive.google.com", "linktr.ee",
 }
 
+# Recognized Applicant Tracking Systems (ATS) used by legitimate employers
+ATS_DOMAINS = {
+    "greenhouse.io", "lever.co", "workday.com", "myworkdayjobs.com",
+    "smartrecruiters.com", "ashbyhq.com", "recruitee.com", "bamboohr.com",
+    "jobvite.com", "icims.com", "rippling.com", "darwinbox.com",
+}
+
+# Free forms or link-in-bio portals that big companies never use for official hiring
+PUBLIC_FORM_DOMAINS = {
+    "forms.gle", "docs.google.com", "linktr.ee", "notion.site", "typeform.com",
+}
+
 ALL_OFFICIAL = {d for domains in BRANDS.values() for d in domains}
 
 # Genuine domains that contain a brand name but are not the main site.
