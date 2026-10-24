@@ -214,10 +214,19 @@ sequenceDiagram
         J->>M: predict_offer(text)
         M-->>J: ML text pattern signal
     end
-    Note over J: no specialist reply in 20 s → runs that check itself
-    J->>J: fixed formula → score 0–100
-    J-->>U: verdict, reasons, interactive card & follow-up Q&A
 ```
+
+### Agent-to-Agent Autonomous B2B Protocol (`JaanchOfferVerification`)
+Other agents in the Fetch.ai ecosystem (such as college placement cell agents, career assistants, or job boards) can query Jaanch autonomously before displaying listings to students:
+
+- **Request:** `VerifyOfferRequest { offer_text: str, source_url: str | null }`
+- **Response:** `VerifyOfferResponse { risk_score: int, verdict: "low_risk" | "suspicious" | "high_risk", reasons: [str], checked_domains: [str] }`
+
+```bash
+# Run the autonomous B2B placement screening demonstration
+JAANCH_MAILBOX=0 python scripts/placement_oracle_demo.py
+```
+*A mock university placement cell agent screens incoming recruiter listings over uAgents protocols, automatically quarantining high-risk scam listings (>=7) and approving legitimate ones.*
 
 </details>
 
@@ -335,15 +344,17 @@ run.py         entry point: starts agents or web app (python run.py web)
 
 **Built:**
 - 📄 **Offer Letter Fraud Detection Agent:** Complete document upload (PDF, DOCX, JPG/PNG/WEBP, TXT up to 15 MB), magic byte validation, page tracking, OCR fallback, MCA CIN validation, 0–100 explainable risk scoring, interactive cards, and follow-up Q&A.
+- 🎓 **Autonomous Campus Placement Oracle:** B2B agent-to-agent protocol (`JaanchOfferVerification`) allowing college placement agents and job boards to screen recruiter listings automatically.
+- 💬 **Reddit & Community Reputation Agent:** Specialist agent (`jaanch-reputation-intel`) performing live Reddit sentiment analysis across student communities (`r/developersIndia`, `r/mumbai`, etc.) for fake internship and fee complaints.
+- 📸 **WhatsApp Screenshot & Flyer OCR Tool:** Dedicated CLI scanner (`scripts/scan_image.py`) extracting text from flyers and WhatsApp screenshots into the forensic engine.
 - 🌐 **Web Chat & REST API:** FastAPI-powered chat interface with file drag-and-drop, risk meter, and endpoints.
 - 🤖 **ML Scam Classifier:** Trained on EMSCAD (17,880 postings) with 0.865 PR-AUC and 78.7% F1.
 - 🧠 **Cross-Student Shared Scam Memory:** Keyed HMAC-SHA256 fingerprinting that catches repeat scam contacts across independent checks without storing private messages.
 - 🌐 **Live Infrastructure Intel:** RDAP domain age, DNS MX mail servers, and lookalike detection.
 - 🇮🇳 **Hinglish & Local Traps:** Hinglish phrasing, Telegram task fraud, and fake MCA registrations.
-- 📋 **Cybercrime Docket Generator:** Pre-formatted complaint docket ready for 1930 / cybercrime.gov.in.
+- 📋 **Cybercrime Docket Generator:** 1-Click pre-formatted complaint docket ready for 1930 / cybercrime.gov.in / Chakshu.
 
 **Next:**
-- 🤝 A verified college placement cell verification network.
 - 💳 A paid deep background verification report using the Fetch.ai Payment Protocol.
 - 🏢 Direct API integration with the Ministry of Corporate Affairs (MCA) live company master data API.
 
