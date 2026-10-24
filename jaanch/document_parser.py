@@ -17,8 +17,6 @@ from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Union
 
-import pypdf
-from pypdf.errors import PdfReadError
 
 from .document_security import EncryptedDocumentError
 
@@ -85,6 +83,10 @@ def normalize_document_text(text: str) -> str:
 
 def extract_from_pdf(file_bytes: bytes, filename: str, doc_id: str) -> ExtractedDocument:
     """Extracts text and metadata from a PDF document, preserving page numbers."""
+    try:
+        import pypdf  # optional: the chat agent must start even without it
+    except ImportError:
+        raise DocumentParsingError("PDF support needs pypdf: pip install pypdf")
     stream = io.BytesIO(file_bytes)
     try:
         reader = pypdf.PdfReader(stream)
