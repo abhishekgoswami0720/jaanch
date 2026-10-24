@@ -66,6 +66,14 @@ def _parse_json(raw: str) -> dict:
     return json.loads(m.group(0) if m else raw)
 
 
+def _clean_company(name) -> Optional[str]:
+    """ASI1 sometimes adds reasoning, e.g. "TCS (implied by recruiter email ...)"; keep just the name."""
+    if not name:
+        return None
+    name = re.sub(r"\s*[(\[].*$", "", str(name)).split(";")[0].strip(" .,-:")
+    return name[:40] or None
+
+
 async def extract(text: str, logger=None) -> tuple[OfferFacts, bool]:
     """Returns (facts, is_offer). Contacts always come from the rules, which don't hallucinate."""
     facts = extract_rules(text)
@@ -77,7 +85,7 @@ async def extract(text: str, logger=None) -> tuple[OfferFacts, bool]:
         ])
         if raw:
             data = _parse_json(raw)
-            facts.company = data.get("company") or facts.company
+            facts.company = _clean_company(data.get("company")) or facts.company
             facts.role = data.get("role") or facts.role
             facts.pay = data.get("pay") or facts.pay
             # Only trust an LLM-reported fee if the quoted text really is in the message.
