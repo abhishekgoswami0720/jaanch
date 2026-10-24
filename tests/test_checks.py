@@ -53,6 +53,20 @@ def test_hinglish_task_scam():
     assert {"task_scam", "easy_money", "off_platform", "no_interview"} <= ids
 
 
+def test_whatsapp_induction_bait_scam():
+    text = (
+        "Your profile has been selected for the Internship Program at Unified Mentor Pvt. Ltd.\n"
+        "Induction: Today ⏰ Time: 05:00 PM\n"
+        "Internship Highlights: Stipend UP TO 7500 RS\n"
+        "Join WhatsApp Group: https://chat.whatsapp.com/BaEnmYMEkhq45novAx73l4\n"
+        "Please join the WhatsApp group and attend the induction session on time."
+    )
+    r = run(text)
+    ids = {s.id for s in r.signals}
+    assert {"off_platform", "no_interview", "urgency"} <= ids
+    assert r.risk >= 5  # At least suspicious (base 2 + 2 + 1.5 + 1 = 6.5 -> 6/7)
+
+
 # ---- resilience ----------------------------------------------------------------
 
 def test_network_down_still_answers():

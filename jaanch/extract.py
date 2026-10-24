@@ -84,7 +84,7 @@ def extract_rules(text: str) -> OfferFacts:
     low = text.lower()
     if "telegram" in low or "t.me/" in low:
         channels.append("telegram")
-    if "whatsapp" in low or "wa.me/" in low:
+    if "whatsapp" in low or "wa.me/" in low or "chat.whatsapp.com" in low:
         channels.append("whatsapp")
     if emails:
         channels.append("email")

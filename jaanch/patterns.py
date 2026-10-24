@@ -43,9 +43,9 @@ RULES: list[tuple[str, str, float, str]] = [
     ),
     (
         "off_platform",
-        "Moves the conversation to Telegram or a personal WhatsApp",
+        "Moves the conversation to Telegram or a WhatsApp group/chat",
         2.0,
-        r"t\.me/|telegram|wa\.me/|whatsapp\s+(only|me|karo|kare)|contact\s+(on|via)\s+whatsapp|dm\s+on\s+telegram",
+        r"t\.me/|telegram|wa\.me/|chat\.whatsapp\.com/|whatsapp\s+(group|only|me|karo|kare)|contact\s+(on|via)\s+whatsapp|dm\s+on\s+telegram",
     ),
     (
         "easy_money",
@@ -57,17 +57,19 @@ RULES: list[tuple[str, str, float, str]] = [
     ),
     (
         "no_interview",
-        "Selection without any interview or test",
+        "Direct selection or induction without interview/application",
         1.5,
         r"no\s+interview|without\s+(any\s+)?interview|direct\s+(selection|joining)|interview\s+nahi"
-        r"|you\s+(are|have\s+been)\s+(shortlisted|selected)\s+(directly|for\s+direct)",
+        r"|profile\s+has\s+been\s+selected|selection\s+.*(?:confirmed|approved)"
+        r"|you\s+(are|have\s+been)\s+(shortlisted|selected)\s+(directly|for\s+direct|for\s+the\s+internship)",
     ),
     (
         "urgency",
-        "Pressures you to act fast",
+        "Pressures you to act fast or attend same-day induction",
         1.0,
         r"within\s+\d+\s*(hours?|hrs?|minutes?)|limited\s+(seats|slots|vacanc)|last\s+date\s+(is\s+)?today"
-        r"|immediate(ly)?\s+(joining|payment|response)|only\s+(few|\d+)\s+(seats|slots)|jaldi|abhi\s+pay",
+        r"|immediate(ly)?\s+(joining|payment|response)|only\s+(few|\d+)\s+(seats|slots)|jaldi|abhi\s+pay"
+        r"|induction\s*:\s*today|induction\s+session\s+today|today\s+at\s+\d{1,2}:\d{2}",
     ),
     (
         "generic_greeting",
