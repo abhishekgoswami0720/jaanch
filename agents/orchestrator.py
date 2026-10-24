@@ -32,6 +32,7 @@ from uagents_core.contrib.protocols.chat import (
     chat_protocol_spec,
 )
 
+from agents.payments import WALLET, payment_proto, request_report_payment
 from jaanch import llm, memory
 from jaanch.cards import (
     REPORT_STEPS,
@@ -154,6 +155,8 @@ def _selection(text: str) -> dict:
         return {"action": "get_docket"}
     if "check_another" in low or "check another" in low or "scan_another" in low:
         return {"action": "check_another"}
+    if "signed_report" in low or "signed report" in low or "evidence report" in low:
+        return {"action": "signed_report"}
     return {}
 
 
@@ -283,6 +286,14 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
             return
         await ctx.send(sender, ChatMessage(content=[TextContent(text="Please scan an offer letter or paste a message first to generate a customized cybercrime evidence docket.")]))
         return
+    if action == "signed_report":
+        last = _LAST_RESULT.get(sender)
+        if last is None:
+            await ctx.send(sender, ChatMessage(content=[TextContent(
+                text="Paste an offer message first; then I can issue a signed report for that check.")]))
+            return
+        await request_report_payment(ctx, sender, last.facts.text, last)
+        return
     if action == "check_another" or _looks_like_chitchat(text):
         await ctx.send(sender, ChatMessage(content=[TextContent(text=WELCOME)]))
         return
@@ -359,9 +370,11 @@ def build_orchestrator(mailbox: bool, domain_address: str, pattern_address: str,
         mailbox=mailbox,
         publish_agent_details=mailbox,
         readme_path=str(HERE / "README_jaanch.md"),
-        description="Paste an offer message or upload an offer letter (PDF, Word, Image); Jaanch checks it for scam signs and provides evidence-backed risk analysis.",
+        description="Paste a job or internship offer; Jaanch checks it with live evidence, gives a 1-10 risk score, remembers repeat scammers, and helps you report it.",
         handle_messages_concurrently=True,
     )
     agent.include(chat_proto, publish_manifest=True)
     agent.include(verify_proto, publish_manifest=True)
+    agent.include(payment_proto, publish_manifest=True)
+    WALLET["address"] = str(agent.wallet.address())
     return agent

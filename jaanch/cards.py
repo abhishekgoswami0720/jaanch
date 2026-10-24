@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from uagents_core.contrib.protocols.chat import ChatMessage, MetadataContent, TextContent
 
+from .fet_payments import price_fet
 from .models import OfferFacts, Signal
 
 VARIANT = {
@@ -52,6 +53,8 @@ def verdict_card(risk: int, verdict: str, verdict_text: str, signals: list[Signa
          "action": {"selection": {"action": "how_to_report"}}},
         {"type": "button", "label": "Copy Cybercrime Docket", "primary": False,
          "action": {"selection": {"action": "get_docket"}}},
+        {"type": "button", "label": f"Signed report ({price_fet()} FET)", "primary": False,
+         "action": {"selection": {"action": "signed_report"}}},
         {"type": "button", "label": "Check another offer", "primary": False,
          "action": {"selection": {"action": "check_another"}}},
     ]

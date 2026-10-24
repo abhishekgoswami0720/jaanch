@@ -608,7 +608,7 @@
 
       let userBubbleHtml = '';
       if (stagedFile) {
-        userBubbleHtml += `<div class="file-attachment-bubble">📎 ${stagedFile.name}</div>`;
+        userBubbleHtml += `<div class="file-attachment-bubble">📎 ${escapeHtml(stagedFile.name)}</div>`;
       }
       if (text) {
         userBubbleHtml += `<div>${escapeHtml(text)}</div>`;

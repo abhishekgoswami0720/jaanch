@@ -71,3 +71,17 @@ def test_file_paths_in_chat_are_never_read(tmp_path):
     secret.write_text("not for strangers", encoding="utf-8")
     msg = ChatMessage(content=[TextContent(text=str(secret))])
     assert _extract_document_attachment(msg, str(secret)) is None
+
+
+def test_specialist_seeds_never_fall_back_to_public_dev_seeds(monkeypatch):
+    """With only JAANCH_SEED set, each specialist gets a private seed, and run.py
+    computes the same address the agent itself will use."""
+    import run
+    from agents.specialists import REPUTATION_DEV_SEED, build_reputation_agent
+    from uagents_core.identity import Identity
+
+    monkeypatch.setenv("JAANCH_SEED", "a private test seed phrase for jaanch")
+    monkeypatch.delenv("JAANCH_REPUTATION_SEED", raising=False)
+    agent = build_reputation_agent(False, port=8199)
+    assert agent.address != Identity.from_seed(REPUTATION_DEV_SEED, 0).address
+    assert run._address("JAANCH_REPUTATION_SEED", REPUTATION_DEV_SEED) == agent.address

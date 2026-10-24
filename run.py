@@ -20,6 +20,7 @@ from uagents.crypto import Identity
 load_dotenv()
 
 from agents.orchestrator import build_orchestrator  # noqa: E402
+from jaanch.seeds import resolve_seed  # noqa: E402
 from agents.specialists import (  # noqa: E402
     DOMAIN_DEV_SEED,
     PATTERN_DEV_SEED,
@@ -33,7 +34,7 @@ MAILBOX = os.getenv("JAANCH_MAILBOX", "1") != "0"
 
 
 def _address(seed_var: str, dev_seed: str) -> str:
-    return Identity.from_seed(os.getenv(seed_var) or dev_seed, 0).address
+    return Identity.from_seed(resolve_seed(seed_var, dev_seed, warn=False), 0).address
 
 
 def build_bureau(port: int = 8000, extra_agents=()) -> Bureau:
@@ -74,7 +75,9 @@ def run_single(which: str, port: int) -> None:
         import uvicorn
         web_port = int(os.getenv("JAANCH_WEB_PORT", str(port)))
         print(f"Starting Jaanch Web Chat Interface & Document Upload API on http://127.0.0.1:{web_port}")
-        uvicorn.run("jaanch.api:app", host="0.0.0.0", port=web_port, reload=False)
+        # Local only by default: on shared Wi-Fi, 0.0.0.0 would let anyone nearby read uploads.
+        host = os.getenv("JAANCH_WEB_HOST", "127.0.0.1")
+        uvicorn.run("jaanch.api:app", host=host, port=web_port, reload=False)
     else:
         sys.exit("usage: python run.py [jaanch|domain|pattern|reputation|web]")
 
@@ -82,7 +85,7 @@ def run_single(which: str, port: int) -> None:
 if __name__ == "__main__":
     port = int(os.getenv("JAANCH_PORT", "8000"))
     if len(sys.argv) > 1:
-        offsets = {"jaanch": 0, "domain": 1, "pattern": 2, "reputation": 3, "web": 0}
+        offsets = {"jaanch": 0, "domain": 1, "pattern": 2, "reputation": 3, "web": 10}
         run_single(sys.argv[1], port + offsets.get(sys.argv[1], 0))
     else:
         build_bureau(port=port).run()

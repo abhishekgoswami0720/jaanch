@@ -7,6 +7,7 @@ from pathlib import Path
 from uagents import Agent, Context, Protocol
 
 from jaanch.domain_intel import check_domains
+from jaanch.seeds import resolve_seed
 from jaanch.models import DomainReport, OfferFacts, PatternReport, ReputationReport
 from jaanch.patterns import check_patterns
 from jaanch.reputation import check_reputation
@@ -45,11 +46,7 @@ REPUTATION_DEV_SEED = "jaanch dev seed reputation intel do not use in prod"
 
 
 def _seed(var: str, dev_default: str) -> str:
-    seed = os.getenv(var)
-    if not seed:
-        print(f"[warn] {var} not set; using a public dev seed. Set your own before deploying.")
-        return dev_default
-    return seed
+    return resolve_seed(var, dev_default)
 
 
 def build_domain_agent(mailbox: bool, port: int | None = None) -> Agent:
@@ -87,6 +84,7 @@ def build_reputation_agent(mailbox: bool, port: int | None = None) -> Agent:
         port=port,
         mailbox=mailbox,
         publish_agent_details=mailbox,
+        readme_path=str(HERE / "README_reputation.md"),
         description="Searches Reddit and community discussions for scam reports, fake internship complaints, and fraudulent reviews.",
     )
     agent.include(reputation_protocol, publish_manifest=mailbox)

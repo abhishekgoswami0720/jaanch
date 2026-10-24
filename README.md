@@ -11,6 +11,16 @@
 
 > **Try it:** open [ASI:One](https://asi1.ai), type **`@jaanch-scam-check`**, and paste any job or internship message.
 
+| Fetch-A-Thon requirement | How Jaanch meets it |
+|---|---|
+| Registered on Agentverse, usable in ASI:One | 4 agents on Agentverse; talk to `@jaanch-scam-check` in ASI:One |
+| Agent Chat Protocol | `jaanch` speaks ACP; the whole check, report steps and complaint docket happen inside the chat |
+| Multi-agent orchestration and tools | `jaanch` sends each offer to 3 specialist agents in parallel (website checks, red flags, Reddit) and calls live services: RDAP domain registries, Google DNS, Reddit, ASI1 |
+| Interactive Cards | Every verdict is a card with evidence and buttons: *How do I report this?*, *Copy Cybercrime Docket*, *Signed report*, *Check another offer* |
+| Payment Protocol | *Signed report* asks for 0.1 FET, checks the payment on the Fetch.ai ledger, then delivers a report signed by the agent ([details](#payment-protocol-signed-evidence-reports)) |
+| Reliability | If a specialist doesn't answer in 20 s, `jaanch` runs that check itself; if ASI1 is down, rules take over; failed lookups are reported, never guessed |
+| Keeps running after the hackathon | Shared scam memory grows with every check; students stay free, placement cells and job boards pay per report or per check |
+
 ---
 
 ## Why this matters
@@ -135,7 +145,7 @@ Jaanch includes a built-in Web Chat interface and REST API powered by FastAPI.
 ```bash
 python run.py web
 ```
-Open **`http://localhost:8000`** in your browser.
+Open **`http://localhost:8010`** in your browser. It listens on this computer only; set `JAANCH_WEB_HOST=0.0.0.0` to share it on your network.
 
 ### Features:
 - 📎 **File Attachment (+ / Paperclip):** Upload PDF, DOCX, PNG, JPG, WEBP, TXT documents up to 15 MB.
@@ -167,6 +177,27 @@ When an offer comes out **high risk**, Jaanch remembers the scammer's contacts: 
 
 ---
 
+## Payment Protocol: signed evidence reports
+
+**Students never pay.** The check, the report steps and the complaint docket are free, always.
+
+The paid product is a **signed evidence report** (0.1 FET by default, set with `JAANCH_REPORT_PRICE_FET`). Jaanch signs it with its agent key, so anyone can prove it is genuine and unedited:
+
+- **Placement cells** buy one before forwarding an internship to hundreds of students, and attach it to the circular.
+- **Students who were scammed** attach one to a police or cybercrime complaint as timestamped evidence: website age, mail server, red flags, all as checked at that moment.
+- **Job boards and career agents** that call Jaanch through `JaanchOfferVerification` are the next customers for per-check pricing.
+
+How it runs inside ASI:One:
+
+1. Click **Signed report** on any verdict card. Jaanch sends a `RequestPayment` (FET, `fet_direct`, 5-minute deadline).
+2. Approve it in ASI:One. ASI:One sends `CommitPayment` with the transaction hash.
+3. Jaanch looks the transaction up on the Fetch.ai ledger and checks that the right amount reached its wallet. Each transaction is accepted once.
+4. Jaanch sends `CompletePayment` and the signed report. If the check fails, it sends `CancelPayment` with the reason, and nothing is delivered.
+
+It runs on the **Dorado testnet** by default (free test FET from the faucet), so nobody spends real money by accident; set `JAANCH_FET_TESTNET=false` for mainnet. The report contains a fingerprint of the message, never the message itself. To check a report, copy it into a file and run `python scripts/verify_report.py report.txt`.
+
+---
+
 ## Think it's a scam? Do this
 
 1. **Don't pay anything** and stop replying. Never share an OTP, PIN or ID documents.
@@ -188,10 +219,10 @@ In ASI:One or Web Chat, click **"How do I report this?"** or **"Copy Cybercrime 
 
 | Agent | What it does | Protocols | Address |
 |---|---|---|---|
-| `jaanch` (`@jaanch-scam-check`) | Talks to users in ASI:One and runs the check | AgentChatProtocol 0.3.0, JaanchOfferVerification 1.0.0 | `agent1qvvzp4xwu6c9ct6xrj8swxeet8aep6g36jf5cafegdfzh633zq3n7m4sd5u` |
+| `jaanch` (`@jaanch-scam-check`) | Talks to users in ASI:One, runs the check, sells signed reports | AgentChatProtocol 0.3.0, JaanchOfferVerification 1.0.0, AgentPaymentProtocol 0.1.0 | `agent1qvvzp4xwu6c9ct6xrj8swxeet8aep6g36jf5cafegdfzh633zq3n7m4sd5u` |
 | `jaanch-domain-intel` | Domain age (RDAP), mail server (MX), lookalike brands | JaanchDomainIntel 0.1.0 | `agent1qgu0xxylvpa9kv7he3vux9kj5x2l9ffdlad0hsh84nv23vf7avyw68j33th` |
 | `jaanch-pattern-check` | Red flags in the text | JaanchPatternCheck 0.1.0 | `agent1qtwpt528nq7x73s3jxwtpfq9056wltxkwwn8d5393cdd2e4rpyxkjm34s46` |
-| `jaanch-reputation-intel` | Reddit & community discussion sentiment and scam reports | JaanchReputationIntel 0.1.0 | `agent1qtg4nqryw3sqduwj9gvmkjdkl5kaut4eccujk5eekjmj298cgpvzjmd8gx7` |
+| `jaanch-reputation-intel` | Reddit & community discussion sentiment and scam reports | JaanchReputationIntel 0.1.0 | printed by `python run.py reputation` |
 
 ```mermaid
 sequenceDiagram
@@ -297,7 +328,7 @@ python scripts/scan_image.py path/to/screenshot.png      # OCR scan of a flyer/s
 JAANCH_MAILBOX=0 python scripts/placement_oracle_demo.py  # autonomous agent-to-agent screening
 
 # 5. Run Web Chat & REST API
-python run.py web           # Available at http://localhost:8000
+python run.py web           # http://localhost:8010 (this computer only)
 
 # 6. Run Agents on Agentverse
 python run.py               # All agents connected to Agentverse
@@ -334,7 +365,7 @@ jaanch/        core detection logic:
 models/        trained ML model pipeline artifact and metadata JSON
 samples/       test messages and offer letters (synthetic and real examples)
 scripts/       data prep, model training, evaluation, one-off check, and local demo
-tests/         105 unit and integration tests with offline fixtures
+tests/         117 unit and integration tests with offline fixtures
 run.py         entry point: starts agents or web app (python run.py web)
 ```
 
@@ -355,9 +386,11 @@ run.py         entry point: starts agents or web app (python run.py web)
 - 🌐 **Live Infrastructure Intel:** RDAP domain age, DNS MX mail servers, and lookalike detection.
 - 🇮🇳 **Hinglish & Local Traps:** Hinglish phrasing, Telegram task fraud, and fake MCA registrations.
 - 📋 **Cybercrime Docket Generator:** 1-Click pre-formatted complaint docket ready for 1930 / cybercrime.gov.in / Chakshu.
+- 💳 **Payment Protocol:** signed evidence reports paid in FET, verified on the Fetch.ai ledger before delivery, with replay protection.
 
 **Next:**
-- 💳 A paid deep background verification report using the Fetch.ai Payment Protocol.
+- 📲 Read offers sent as files and screenshots directly in ASI:One (today: paste the text in ASI:One, or upload in the web app).
+- 💼 Per-check pricing for job boards calling `JaanchOfferVerification`.
 - 🏢 Direct API integration with the Ministry of Corporate Affairs (MCA) live company master data API.
 
 ---

@@ -13,6 +13,7 @@ import base64
 from datetime import datetime, timezone
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import uuid
@@ -51,13 +52,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Allow CORS for development and cross-origin embedding
+# The web app is served from this same server, so other websites get no access:
+# uploaded offer letters can hold personal data. Add trusted origins with
+# JAANCH_WEB_ORIGINS (comma-separated) only if you embed the app elsewhere.
+_extra_origins = [o.strip() for o in os.getenv("JAANCH_WEB_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["http://localhost:8010", "http://127.0.0.1:8010", *_extra_origins],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 WEB_DIR = Path(__file__).resolve().parent / "web"
