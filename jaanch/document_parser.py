@@ -221,6 +221,54 @@ def extract_from_docx(file_bytes: bytes, filename: str, doc_id: str) -> Extracte
     )
 
 
+def _extract_with_vision_sync(file_bytes: bytes, filename: str) -> Optional[str]:
+    """Fallback OCR using ASI1 Vision endpoint if Tesseract is unavailable and API key is present."""
+    import base64
+    import json
+    import os
+    import urllib.request
+
+    key = os.getenv("ASI1_API_KEY") or os.getenv("ASI_ONE_API_KEY")
+    if not key:
+        return None
+    try:
+        mime = "image/png" if filename.lower().endswith(".png") else "image/jpeg"
+        b64 = base64.b64encode(file_bytes).decode("utf-8")
+        data_url = f"data:{mime};base64,{b64}"
+        body = {
+            "model": os.getenv("ASI1_MODEL", "asi1"),
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Transcribe the exact text from this job/internship offer screenshot or flyer. Return ONLY the extracted text with no extra commentary.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": data_url},
+                        },
+                    ],
+                }
+            ],
+            "max_tokens": 1000,
+        }
+        req = urllib.request.Request(
+            "https://api.asi1.ai/v1/chat/completions",
+            data=json.dumps(body).encode("utf-8"),
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=12) as response:
+            if response.status == 200:
+                data = json.loads(response.read().decode("utf-8"))
+                return data["choices"][0]["message"]["content"].strip()
+    except Exception as err:
+        LOGGER.warning(f"Vision OCR fallback failed: {err}")
+    return None
+
+
 def extract_from_image(file_bytes: bytes, filename: str, doc_id: str) -> ExtractedDocument:
     """Processes an image offer letter (JPG, PNG, WEBP) with OCR support."""
     try:
@@ -248,17 +296,25 @@ def extract_from_image(file_bytes: bytes, filename: str, doc_id: str) -> Extract
     extracted_text = ""
     warnings = []
 
-    # Attempt OCR if pytesseract is installed
+    # 1. Attempt OCR if pytesseract is installed
     try:
         import pytesseract
         extracted_text = pytesseract.image_to_string(img) or ""
         clean_text = normalize_document_text(extracted_text)
     except Exception:
         clean_text = ""
-        warnings.append(
-            "Tesseract OCR is not installed or configured on the system. "
-            "Please paste the text directly or configure Tesseract OCR for automated image scanning."
-        )
+
+    # 2. If local OCR yielded no text, attempt ASI1 Vision OCR fallback
+    if not clean_text:
+        vision_text = _extract_with_vision_sync(file_bytes, filename)
+        if vision_text:
+            clean_text = normalize_document_text(vision_text)
+            warnings.append("Text extracted via ASI1 Vision OCR engine.")
+        else:
+            warnings.append(
+                "Tesseract OCR is not installed or configured on the system. "
+                "Please paste the text directly or configure Tesseract OCR for automated image scanning."
+            )
 
     words = clean_text.split()
 

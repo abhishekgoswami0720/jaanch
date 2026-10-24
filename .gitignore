@@ -65,3 +65,5 @@ models/*
 
 # Ignore raw CSV files in legacy Data folder
 /Data/*.csv
+
+private_keys.json

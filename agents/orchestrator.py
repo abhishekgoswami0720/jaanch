@@ -289,8 +289,20 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     if action == "signed_report":
         last = _LAST_RESULT.get(sender)
         if last is None:
+            latest_doc = _LAST_DOCUMENT_ANALYSIS.get(sender) or DOCUMENT_STORE.get_latest_analysis(sender)
+            if latest_doc:
+                doc_sigs = [Signal(id="doc_indicator", label=ind.get("indicator", "Risk indicator"), weight=float(ind.get("weight", 2.0))) for ind in latest_doc.risk_indicators]
+                last = Result(
+                    risk=max(1, min(10, round(latest_doc.risk_score / 10))),
+                    verdict=latest_doc.classification.lower().replace(" ", "_"),
+                    verdict_text=latest_doc.summary,
+                    signals=doc_sigs,
+                    checked=[latest_doc.extracted_fields.get("company_website") or "document"],
+                    facts=OfferFacts(text=f"Offer document: {latest_doc.filename} for {latest_doc.extracted_fields.get('company_name', 'Company')}"),
+                )
+        if last is None:
             await ctx.send(sender, ChatMessage(content=[TextContent(
-                text="Paste an offer message first; then I can issue a signed report for that check.")]))
+                text="Paste an offer message or upload a document first; then I can issue a signed report for that check.")]))
             return
         await request_report_payment(ctx, sender, last.facts.text, last)
         return
@@ -356,6 +368,10 @@ async def on_verify(ctx: Context, sender: str, req: VerifyOfferRequest):
 
 def build_orchestrator(mailbox: bool, domain_address: str, pattern_address: str,
                        reputation_address: str = "", port: int | None = None) -> Agent:
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
     SPECIALISTS["domain"] = domain_address
     SPECIALISTS["pattern"] = pattern_address
     SPECIALISTS["reputation"] = reputation_address

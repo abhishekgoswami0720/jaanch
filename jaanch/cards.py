@@ -132,6 +132,8 @@ def document_analysis_card(analysis: Any) -> dict:
          "action": {"selection": {"action": "get_docket"}}},
         {"type": "button", "label": "How do I report this?", "primary": False,
          "action": {"selection": {"action": "how_to_report"}}},
+        {"type": "button", "label": f"Signed report ({price_fet()} FET)", "primary": False,
+         "action": {"selection": {"action": "signed_report"}}},
         {"type": "button", "label": "Scan another document", "primary": False,
          "action": {"selection": {"action": "check_another"}}},
     ]
