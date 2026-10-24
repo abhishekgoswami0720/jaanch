@@ -138,6 +138,18 @@ def test_reddit_community_scam_detection():
     assert any("r/developersIndia" in s.evidence for s in r.signals)
 
 
+def test_personal_upi_and_fake_cin():
+    text = (
+        "Pay registration charge ₹999 to placement.officer@okaxis to confirm your slot. "
+        "Company CIN: U74999DL2099PTC384920."
+    )
+    r = run(text)
+    ids = {s.id for s in r.signals}
+    assert "personal_upi_demand" in ids
+    assert "fake_cin_number" in ids
+    assert r.verdict == "high_risk"
+
+
 # ---- resilience ----------------------------------------------------------------
 
 def test_network_down_still_answers():

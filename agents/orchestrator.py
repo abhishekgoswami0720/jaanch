@@ -24,7 +24,13 @@ from uagents_core.contrib.protocols.chat import (
 )
 
 from jaanch import llm
-from jaanch.cards import REPORT_STEPS, WELCOME, card_message, verdict_card
+from jaanch.cards import (
+    REPORT_STEPS,
+    WELCOME,
+    card_message,
+    generate_cybercrime_docket,
+    verdict_card,
+)
 from jaanch.domain_intel import check_domains
 from jaanch.ml_detector import predict_offer
 from jaanch.models import (
@@ -102,9 +108,15 @@ def _selection(text: str) -> dict:
     low = text.lower()
     if "how_to_report" in low or "how do i report" in low:
         return {"action": "how_to_report"}
+    if "get_docket" in low or "cybercrime docket" in low or "copy docket" in low:
+        return {"action": "get_docket"}
     if "check_another" in low or "check another" in low:
         return {"action": "check_another"}
     return {}
+
+
+# In-memory shared collective threat ledger across scans
+_COMMUNITY_FLAGGED_SCAMS: dict[str, int] = {}
 
 
 @chat_proto.on_message(ChatMessage)
@@ -119,6 +131,15 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
     action = _selection(raw_text).get("action")
     if action == "how_to_report":
         await ctx.send(sender, ChatMessage(content=[TextContent(text=REPORT_STEPS)]))
+        return
+    if action == "get_docket":
+        last_investigation = getattr(ctx, "_last_investigation", None)
+        if last_investigation:
+            res = last_investigation
+            docket_text = generate_cybercrime_docket(res.facts, res.risk, res.signals)
+            await ctx.send(sender, ChatMessage(content=[TextContent(text=docket_text)]))
+        else:
+            await ctx.send(sender, ChatMessage(content=[TextContent(text="Please paste an offer to scan first to generate a customized cybercrime evidence docket.")]))
         return
     if action == "check_another" or _looks_like_chitchat(text):
         await ctx.send(sender, ChatMessage(content=[TextContent(text=WELCOME)]))
@@ -141,6 +162,25 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
             )
         await ctx.send(sender, ChatMessage(content=[TextContent(text=advice_text)]))
         return
+
+    # Collective memory check: Record and alert if repeated scam target
+    for target in (result.facts.phones + result.facts.upis + [d for d in result.facts.domains if "whatsapp" in d or "telegram" in d]):
+        count = _COMMUNITY_FLAGGED_SCAMS.get(target, 0) + 1
+        _COMMUNITY_FLAGGED_SCAMS[target] = count
+        if count > 1 and result.risk >= 5:
+            result.signals.insert(
+                0,
+                Signal(
+                    id="collective_threat_alert",
+                    label=f"Repeat Scam Alert: Scanned by {count} job-seekers recently",
+                    weight=1.5,
+                    evidence=f"Target {target} repeatedly queried and flagged",
+                    source="collective-memory",
+                ),
+            )
+
+    # Save to context for one-click docket generation
+    setattr(ctx, "_last_investigation", result)
 
     narration = await llm.explain(text, result.risk, result.verdict_text, result.signals, logger=ctx.logger)
     payload = verdict_card(result.risk, result.verdict, result.verdict_text, result.signals, result.checked)

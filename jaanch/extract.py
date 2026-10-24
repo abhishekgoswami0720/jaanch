@@ -15,6 +15,8 @@ URL_RE = re.compile(
     re.IGNORECASE,
 )
 PHONE_RE = re.compile(r"(?:\+?91[\s-]?)?\b[6-9]\d{4}[\s-]?\d{5}\b")
+UPI_RE = re.compile(r"\b[A-Za-z0-9._%+-]{2,256}@(okaxis|okhdfcbank|okicici|oksbi|ybl|ibl|paytm|apl|barodampay|upi)\b", re.IGNORECASE)
+CIN_RE = re.compile(r"\b[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}\b", re.IGNORECASE)
 MONEY = r"(?:rs\.?|inr|₹)\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:k|lakh|lpa))?"
 FEE_RE = re.compile(
     r"((?:registration|security|training|joining|processing|kit|onboarding|verification|"
@@ -98,6 +100,8 @@ def extract_rules(text: str) -> OfferFacts:
         break
     pay = PAY_RE.search(text)
     brands = find_brands(text)
+    upis = sorted({m.group(0).lower() for m in UPI_RE.finditer(text)})
+    cins = sorted({m.group(0).upper() for m in CIN_RE.finditer(text)})
 
     return OfferFacts(
         text=text,
@@ -108,6 +112,8 @@ def extract_rules(text: str) -> OfferFacts:
         domains=sorted(domains),
         urls=urls,
         phones=sorted({re.sub(r"[\s-]", "", p) for p in PHONE_RE.findall(text)}),
+        upis=upis,
+        cins=cins,
         channels=channels,
         extracted_by="rules",
     )

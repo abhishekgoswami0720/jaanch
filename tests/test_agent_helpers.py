@@ -1,8 +1,8 @@
 import json
 
 from agents.orchestrator import _looks_like_chitchat, _selection, _strip_mention
-from jaanch.cards import card_message, verdict_card
-from jaanch.models import Signal
+from jaanch.cards import card_message, generate_cybercrime_docket, verdict_card
+from jaanch.models import OfferFacts, Signal
 
 
 def depth(node, d=1):
@@ -24,8 +24,27 @@ def test_card_fits_asi_one_limits():
 def test_card_selection_parsing():
     assert _selection('{"action": "how_to_report"}')["action"] == "how_to_report"
     assert _selection("The user chose: How do I report this?")["action"] == "how_to_report"
+    assert _selection("Copy Cybercrime Docket")["action"] == "get_docket"
     assert _selection("check_another")["action"] == "check_another"
     assert _selection("Dear candidate, pay ₹999") == {}
+
+
+def test_generate_cybercrime_docket():
+    facts = OfferFacts(
+        text="Pay ₹1,500 to recruiter@okaxis for Infosys placement",
+        company="Infosys",
+        fee="₹1,500",
+        phones=["9876543210"],
+        upis=["recruiter@okaxis"],
+        domains=["fake-infosys.in"],
+    )
+    sigs = [Signal(id="fee_demand", label="Asks fee", weight=4, evidence="₹1,500", source="pattern-agent")]
+    docket = generate_cybercrime_docket(facts, 9, sigs)
+    assert "OFFICIAL CYBERCRIME COMPLAINT DOCKET" in docket
+    assert "1930" in docket
+    assert "recruiter@okaxis" in docket
+    assert "fake-infosys.in" in docket
+    assert "9876543210" in docket
 
 
 def test_chitchat_detection():

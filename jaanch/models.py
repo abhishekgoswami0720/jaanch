@@ -31,6 +31,8 @@ class OfferFacts(Model):
     domains: List[str] = []
     urls: List[str] = []
     phones: List[str] = []
+    upis: List[str] = []
+    cins: List[str] = []
     channels: List[str] = []  # e.g. telegram, whatsapp, email
     extracted_by: str = "rules"  # "asi1" or "rules"
 

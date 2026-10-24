@@ -56,6 +56,8 @@ Every offer starts at **2**. Each warning sign adds points and each good sign ta
 | What Jaanch finds | Points |
 |---|:---:|
 | 💸 Asks you to **pay a fee or deposit** to get the job | **+4** |
+| 💸 Directs payment to a **personal UPI handle** (`@okaxis`, `@paytm`, `@ybl`) | **+3** |
+| 🏛️ Fabricated or invalid **MCA / CIN corporate registration number** | **+3** |
 | 🎓 **Course / Mentorship upsell bait** (requires paid training before internship) | **+3** |
 | 🎭 Website **copies a big company's name** (like `infosys-careers.in` or `wipr0.com`) | **+3** |
 | 🆕 Website was **made less than 30 days ago** | **+3** |

@@ -271,4 +271,32 @@ def check_patterns(facts: OfferFacts) -> PatternReport:
             )
         )
 
+    # Personal UPI ID provided for payment / fees
+    if facts.upis:
+        signals.append(
+            Signal(
+                id="personal_upi_demand",
+                label="Directs payment to a personal UPI VPA handle instead of an official merchant gateway",
+                weight=3.0,
+                evidence=", ".join(facts.upis[:2]),
+                source=SOURCE,
+            )
+        )
+
+    # CIN / MCA corporate claims verification
+    if facts.cins:
+        # Check CIN structure: L/U (listed/unlisted), 5 digits, 2 state letters, 4 year digits, 3 ownership letters, 6 digits
+        for cin in facts.cins:
+            year = int(cin[8:12]) if cin[8:12].isdigit() else 0
+            if year > 2026 or year < 1900:
+                signals.append(
+                    Signal(
+                        id="fake_cin_number",
+                        label="Fabricated Ministry of Corporate Affairs CIN registration number",
+                        weight=3.0,
+                        evidence=cin,
+                        source=SOURCE,
+                    )
+                )
+
     return PatternReport(signals=signals)
