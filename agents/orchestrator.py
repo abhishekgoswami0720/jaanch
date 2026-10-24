@@ -158,7 +158,10 @@ def _selection(text: str) -> dict:
 
 
 def _extract_document_attachment(msg: ChatMessage, raw_text: str) -> Optional[Tuple[bytes, str]]:
-    """Inspects ChatMessage for uploaded offer letters (ResourceContent, base64 data URIs, or local file paths)."""
+    """Inspects ChatMessage for uploaded offer letters sent inline (base64 data URIs).
+
+    File paths are never followed: anyone on ASI:One can message this agent, and
+    a path in a message must not make it read files from the machine it runs on."""
     # 1. Check ResourceContent
     for c in msg.content:
         if isinstance(c, ResourceContent):
@@ -173,9 +176,6 @@ def _extract_document_attachment(msg: ChatMessage, raw_text: str) -> Optional[Tu
                             return base64.b64decode(match.group(1)), name
                         except Exception:
                             pass
-                elif uri and Path(uri).exists() and Path(uri).is_file():
-                    p = Path(uri)
-                    return p.read_bytes(), p.name
 
     # 2. Check base64 data URI in text
     if "data:application/" in raw_text or "data:image/" in raw_text:
@@ -186,16 +186,6 @@ def _extract_document_attachment(msg: ChatMessage, raw_text: str) -> Optional[Tu
             ext = ".pdf" if "pdf" in mime else (".docx" if "word" in mime else ".jpg")
             try:
                 return base64.b64decode(b64_str), f"offer_letter{ext}"
-            except Exception:
-                pass
-
-    # 3. Check for local file path in text (e.g. path pasted by test client or CLI)
-    cleaned_path = raw_text.strip().strip("'\"")
-    if Path(cleaned_path).suffix.lower() in (".pdf", ".docx", ".jpg", ".jpeg", ".png", ".webp", ".txt"):
-        p = Path(cleaned_path)
-        if p.exists() and p.is_file():
-            try:
-                return p.read_bytes(), p.name
             except Exception:
                 pass
 
@@ -265,6 +255,11 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
             return
 
     if not raw_text:
+        if any(isinstance(c, ResourceContent) for c in msg.content):
+            await ctx.send(sender, ChatMessage(content=[TextContent(text=(
+                "I couldn't open that file here. Please paste the offer's text into this chat, "
+                "or upload the letter in the Jaanch web app (`python run.py web`)."
+            ))]))
         return
 
     text = _strip_mention(raw_text)

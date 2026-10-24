@@ -59,3 +59,15 @@ def test_strip_mention():
     assert _strip_mention("@jaanch-scam-check tell me what a fake internship looks like") == "tell me what a fake internship looks like"
     assert _strip_mention("@jaanch hello") == "hello"
     assert _strip_mention("Just a normal text") == "Just a normal text"
+
+
+def test_file_paths_in_chat_are_never_read(tmp_path):
+    """Anyone on ASI:One can message the agent; a path must not make it read local files."""
+    from uagents_core.contrib.protocols.chat import ChatMessage, TextContent
+
+    from agents.orchestrator import _extract_document_attachment
+
+    secret = tmp_path / "private_notes.txt"
+    secret.write_text("not for strangers", encoding="utf-8")
+    msg = ChatMessage(content=[TextContent(text=str(secret))])
+    assert _extract_document_attachment(msg, str(secret)) is None

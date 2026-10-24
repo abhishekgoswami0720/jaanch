@@ -5,9 +5,11 @@
 <picture><source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg"><source media="(prefers-color-scheme: light)" srcset="assets/banner-light.svg"><img alt="Jaanch: check a job offer before it checks your wallet" src="assets/banner-dark.svg" width="100%"></picture>
 </p>
 
-**Got a job or internship offer that feels too good to be true?** Paste the text or upload the offer document (PDF, Word, or screenshot) into Jaanch. In a few seconds you get an **explainable risk score**, the verified evidence behind it, and what to do next.
+**Got a job or internship offer that feels too good to be true?** Paste the message into Jaanch on ASI:One, or upload the offer letter (PDF, Word or image) in the Jaanch web app. In a few seconds you get an **explainable risk score**, the verified evidence behind it, and what to do next.
 
-*Jaanch* (जाँच) means "check" in Hindi. It runs as multi-agent recruitment security system on Fetch.ai's Agentverse, accessible via **ASI:One** and the integrated **Jaanch Web Chat**.
+*Jaanch* (जाँच) means "check" in Hindi. It runs as a multi-agent system on Fetch.ai's Agentverse, reachable from **ASI:One** and from the built-in **Jaanch web app**.
+
+> **Try it:** open [ASI:One](https://asi1.ai), type **`@jaanch-scam-check`**, and paste any job or internship message.
 
 ---
 
@@ -29,7 +31,7 @@ Half the people in that survey said that knowing who the recruiter really is wou
 
 ## 📄 Offer Letter Fraud Detection Agent
 
-Users can upload an offer letter directly in the chat, and the agent analyzes the document to determine whether it appears legitimate, suspicious, or fraudulent.
+Upload an offer letter in the Jaanch web app (`python run.py web`) and it is analysed as legitimate, suspicious or fraudulent. In ASI:One, paste the letter's text.
 
 ```mermaid
 flowchart TD
@@ -186,10 +188,10 @@ In ASI:One or Web Chat, click **"How do I report this?"** or **"Copy Cybercrime 
 
 | Agent | What it does | Protocols | Address |
 |---|---|---|---|
-| `jaanch` | Talks to users in ASI:One, handles document attachments & runs check | AgentChatProtocol 0.3.0, JaanchOfferVerification 1.0.0 | *fill in after first run* |
-| `jaanch-domain-intel` | Domain age (RDAP), mail server (MX), lookalike brands | JaanchDomainIntel 0.1.0 | *fill in after first run* |
-| `jaanch-pattern-check` | Red flags in the text | JaanchPatternCheck 0.1.0 | *fill in after first run* |
-| `jaanch-reputation-intel` | Reddit & community discussion sentiment and scam reports | JaanchReputationIntel 0.1.0 | *fill in after first run* |
+| `jaanch` (`@jaanch-scam-check`) | Talks to users in ASI:One and runs the check | AgentChatProtocol 0.3.0, JaanchOfferVerification 1.0.0 | `agent1qvvzp4xwu6c9ct6xrj8swxeet8aep6g36jf5cafegdfzh633zq3n7m4sd5u` |
+| `jaanch-domain-intel` | Domain age (RDAP), mail server (MX), lookalike brands | JaanchDomainIntel 0.1.0 | `agent1qgu0xxylvpa9kv7he3vux9kj5x2l9ffdlad0hsh84nv23vf7avyw68j33th` |
+| `jaanch-pattern-check` | Red flags in the text | JaanchPatternCheck 0.1.0 | `agent1qtwpt528nq7x73s3jxwtpfq9056wltxkwwn8d5393cdd2e4rpyxkjm34s46` |
+| `jaanch-reputation-intel` | Reddit & community discussion sentiment and scam reports | JaanchReputationIntel 0.1.0 | `agent1qtg4nqryw3sqduwj9gvmkjdkl5kaut4eccujk5eekjmj298cgpvzjmd8gx7` |
 
 ```mermaid
 sequenceDiagram
@@ -289,7 +291,7 @@ cp .env.example .env        # add ASI1_API_KEY and seed phrases
 
 # 3. Quick terminal check or OCR flyer scan
 python scripts/check.py samples/scam_fee_whatsapp.txt     # one check, no agents
-python scripts/scan_image.py samples/screenshot.png       # OCR scan from WhatsApp flyer/image
+python scripts/scan_image.py path/to/screenshot.png      # OCR scan of a flyer/screenshot (needs Tesseract installed)
 
 # 4. Autonomous B2B Multi-Agent Placement Screening
 JAANCH_MAILBOX=0 python scripts/placement_oracle_demo.py  # autonomous agent-to-agent screening
@@ -299,7 +301,7 @@ python run.py web           # Available at http://localhost:8000
 
 # 6. Run Agents on Agentverse
 python run.py               # All agents connected to Agentverse
-python run.py jaanch        # Run individual agent (jaanch | domain | pattern | reputation)
+python run.py jaanch        # one agent per terminal: jaanch | domain | pattern | reputation (ports 8000-8003)
 
 # 7. Run Tests
 pytest -v                   # offline test suite
@@ -332,7 +334,7 @@ jaanch/        core detection logic:
 models/        trained ML model pipeline artifact and metadata JSON
 samples/       test messages and offer letters (synthetic and real examples)
 scripts/       data prep, model training, evaluation, one-off check, and local demo
-tests/         104 unit and integration tests with offline fixtures
+tests/         105 unit and integration tests with offline fixtures
 run.py         entry point: starts agents or web app (python run.py web)
 ```
 
@@ -345,10 +347,10 @@ run.py         entry point: starts agents or web app (python run.py web)
 **Built:**
 - 📄 **Offer Letter Fraud Detection Agent:** Complete document upload (PDF, DOCX, JPG/PNG/WEBP, TXT up to 15 MB), magic byte validation, page tracking, OCR fallback, MCA CIN validation, 0–100 explainable risk scoring, interactive cards, and follow-up Q&A.
 - 🎓 **Autonomous Campus Placement Oracle:** B2B agent-to-agent protocol (`JaanchOfferVerification`) allowing college placement agents and job boards to screen recruiter listings automatically.
-- 💬 **Reddit & Community Reputation Agent:** Specialist agent (`jaanch-reputation-intel`) performing live Reddit sentiment analysis across student communities (`r/developersIndia`, `r/mumbai`, etc.) for fake internship and fee complaints.
-- 📸 **WhatsApp Screenshot & Flyer OCR Tool:** Dedicated CLI scanner (`scripts/scan_image.py`) extracting text from flyers and WhatsApp screenshots into the forensic engine.
+- 💬 **Reddit & Community Reputation Agent:** Specialist agent (`jaanch-reputation-intel`) that searches Reddit for scam and fee complaints about the company or website in the offer.
+- 📸 **WhatsApp Screenshot & Flyer OCR Tool:** Command-line scanner (`scripts/scan_image.py`) that reads text from flyers and WhatsApp screenshots with Tesseract OCR and checks it.
 - 🌐 **Web Chat & REST API:** FastAPI-powered chat interface with file drag-and-drop, risk meter, and endpoints.
-- 🤖 **ML Scam Classifier:** Trained on EMSCAD (17,880 postings) with 0.865 PR-AUC and 78.7% F1.
+- 🤖 **ML Scam Classifier (optional):** Trained on EMSCAD (17,880 postings), 0.865 PR-AUC and 78.7% F1 on held-out data. The model file is not in this repo; build it with the steps above. EMSCAD is English job-board data, so it adds one signal and never decides the verdict.
 - 🧠 **Cross-Student Shared Scam Memory:** Keyed HMAC-SHA256 fingerprinting that catches repeat scam contacts across independent checks without storing private messages.
 - 🌐 **Live Infrastructure Intel:** RDAP domain age, DNS MX mail servers, and lookalike detection.
 - 🇮🇳 **Hinglish & Local Traps:** Hinglish phrasing, Telegram task fraud, and fake MCA registrations.
