@@ -1,12 +1,40 @@
+# Credentials & Secrets
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.pfx
+
+# Python caches
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Virtual Environments
 .venv/
 venv/
+ENV/
+env/
+
+# Logs & Diagnostics
 *.log
+*.sqlite3
+
 # Agent storage (includes the scam memory fingerprints)
 *_data.json
+
+# OS / Editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
 
 # Data & Models (ignore large/raw data and binary model artifacts)
 data/raw/*

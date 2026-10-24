@@ -317,6 +317,14 @@ async def on_chat(ctx: Context, sender: str, msg: ChatMessage):
         await ctx.send(sender, ChatMessage(content=[TextContent(text=advice_text)]))
         return
 
+<<<<<<< HEAD
+=======
+    # Repeat scammers are caught by the shared scam memory inside investigate().
+    # Keep this user's latest result for the one-click cybercrime docket
+    # (ctx is rebuilt for every message, so it can't hold state).
+    if len(_LAST_RESULT) > 500:
+        _LAST_RESULT.clear()
+>>>>>>> 0af5ad58c0415d3f45fb8a6097c4b433ba917c5f
     _LAST_RESULT[sender] = result
 
     narration = await llm.explain(text, result.risk, result.verdict_text, result.signals, logger=ctx.logger)
